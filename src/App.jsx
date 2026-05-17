@@ -35,26 +35,36 @@ const SLOT_LABELS = [
 
 function getTargetWeek() {
   const now = new Date();
+
+  // calcola martedì della settimana
+  const day = now.getDay(); // 0=domenica, 1=lunedì ... 6=sabato
+  const daysSinceTuesday = (day >= 2 ? day - 2 : day + 5);
+  const tuesday = new Date(now);
+  tuesday.setDate(now.getDate() - daysSinceTuesday);
+  tuesday.setHours(0, 0, 0, 0);
+
+  // calcola sabato ore 12 per switch
   const thisSaturday = new Date(now);
-  thisSaturday.setDate(now.getDate() - ((now.getDay() + 1) % 7));
+  thisSaturday.setDate(now.getDate() - ((day + 1) % 7));
   thisSaturday.setHours(12, 0, 0, 0);
 
   let start, end;
   if (now >= thisSaturday) {
-    start = new Date(thisSaturday);
-    end = new Date(thisSaturday);
-    end.setDate(thisSaturday.getDate() + 7);
+    start = tuesday;
+    end = new Date(tuesday);
+    end.setDate(tuesday.getDate() + 5); // sabato
   } else {
-    start = new Date(thisSaturday);
-    start.setDate(thisSaturday.getDate() - 7);
-    end = new Date(thisSaturday);
+    start = new Date(tuesday);
+    start.setDate(tuesday.getDate() - 7);
+    end = new Date(start);
+    end.setDate(start.getDate() + 5);
   }
 
-  const fmt = (d) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const fmt = (d) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}`;
 
   return {
     weekKey: start.toISOString().slice(0, 10),
-    label: `da sabato ${fmt(start)} a sabato ${fmt(end)}`,
+    label: `Settimana dal ${fmt(start)}`,
     monthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
     startDate: start,
     endDate: end
@@ -66,18 +76,19 @@ const styles = {
   card: { background: "#fff", borderRadius: 16, padding: 16, marginBottom: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" },
   input: { width: "100%", padding: 10, borderRadius: 10, border: "1px solid #ccc", boxSizing: "border-box" },
   button: { padding: "10px 14px", borderRadius: 10, border: "none", cursor: "pointer" },
+  select: { width: "100%", padding: 10, borderRadius: 10, border: "1px solid #ccc", marginTop: 10, boxSizing: "border-box" },
 };
 
 export default function App() {
   if (!supabase) return <div style={{ padding: 20 }}>Configurazione Supabase mancante</div>;
 
   const week = useMemo(() => getTargetWeek(), []);
-
   const [player, setPlayer] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState({});
   const [archiveBookings, setArchiveBookings] = useState({});
+  const [selectedArchiveWeek, setSelectedArchiveWeek] = useState("");
 
   async function loadBookings() {
     try {
@@ -88,7 +99,6 @@ export default function App() {
 
       const groupedCurrent = {};
       const groupedArchive = {};
-
       (data || []).forEach((r) => {
         if (r.week_key === week.weekKey) {
           groupedCurrent[r.slot] = groupedCurrent[r.slot] || [];
@@ -99,7 +109,6 @@ export default function App() {
           groupedArchive[r.week_key][r.slot].push(r.player);
         }
       });
-
       setBookings(groupedCurrent);
       setArchiveBookings(groupedArchive);
     } catch (err) {
@@ -108,7 +117,6 @@ export default function App() {
   }
 
   useEffect(() => { if (user) loadBookings(); }, [user]);
-
   const login = () => { if (USERS[player] === password) setUser(player); else alert("Credenziali non valide"); };
 
   if (!user) {
@@ -130,12 +138,14 @@ export default function App() {
     );
   }
 
+  const archiveWeeks = Object.keys(archiveBookings).sort().reverse();
+
   return (
     <div style={styles.page}>
       <div style={styles.card}>
         <h2>Prenotazioni al MICHELANGELO</h2>
         <div>Ciao {user}</div>
-        <small>Settimana {week.label}</small>
+        <small>{week.label}</small>
       </div>
 
       {/* SLOT attuali */}
@@ -144,7 +154,6 @@ export default function App() {
         const mine = players.includes(user);
         const isFull = slot !== "Terzo tempo" && players.length >= 4;
         const signalColor = players.length === 0 ? "green" : isFull ? "red" : "orange";
-
         return (
           <div key={slot} style={{ ...styles.card, padding: 14 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
@@ -166,26 +175,25 @@ export default function App() {
         );
       })}
 
-      {/* ARCHIVIO prenotazioni passate */}
-      {Object.keys(archiveBookings).sort().reverse().map(weekKey => (
-        <div key={weekKey} style={{ marginTop: 20 }}>
-          <div style={{ ...styles.card, background: "#f0f0f0" }}>
-            <strong>Archivio settimana {weekKey}</strong>
-          </div>
-          {SLOT_LABELS.map(slot => {
-            const players = [...((archiveBookings[weekKey] || {})[slot] || [])].sort();
-            if (players.length === 0) return null;
-            return (
-              <div key={slot} style={{ ...styles.card, padding: 10, background: "#fafafa" }}>
-                <span style={{ fontSize: 14 }}>{slot}: {players.join(", ")}</span>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-
       <div style={{ padding: 20, textAlign: "center" }}>
         <button style={{ ...styles.button, width: "100%", background: "#111", color: "white", fontWeight: "bold" }} onClick={() => { setUser(null); setPassword(""); }}>LOGOUT</button>
+
+        {archiveWeeks.length > 0 && (
+          <select style={styles.select} value={selectedArchiveWeek} onChange={e => setSelectedArchiveWeek(e.target.value)}>
+            <option value="">Archivio</option>
+            {archiveWeeks.map(wk => <option key={wk} value={wk}>{`Settimana dal ${wk}`}</option>)}
+          </select>
+        )}
+
+        {selectedArchiveWeek && SLOT_LABELS.map(slot => {
+          const players = [...((archiveBookings[selectedArchiveWeek] || {})[slot] || [])].sort();
+          if (players.length === 0) return null;
+          return (
+            <div key={slot} style={{ ...styles.card, padding: 10, background: "#fafafa" }}>
+              <span style={{ fontSize: 14 }}>{slot}: {players.join(", ")}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
