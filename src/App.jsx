@@ -145,9 +145,184 @@ export default function App() {
 
   return (
     <div style={styles.page}>
-      {/* Qui va tutto il resto del codice per mostrare slot e prenotazioni */}
-      <h2>Ciao {user}</h2>
-      <p>Settimana {week.label}</p>
+      <div style={styles.card}>
+        <h2>Prenotazioni al MICHELANGELO</h2>
+        <div>Ciao {user}</div>
+        <small>Settimana {week.label}</small>
+      </div>
+
+      {SLOT_LABELS.map((slot) => {
+        const players = [...(bookings[slot] || [])].sort();
+        const mine = players.includes(user);
+        const isFull = slot !== "Terzo tempo" && players.length >= 4;
+
+        const signalColor =
+          players.length === 0
+            ? "green"
+            : isFull
+            ? "red"
+            : "orange";
+
+        return (
+          <div
+            key={slot}
+            style={{
+              ...styles.card,
+              padding: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 10,
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 999,
+                      background: signalColor,
+                      display: "inline-block",
+                      flexShrink: 0,
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 400,
+                    }}
+                  >
+                    {slot}
+                  </span>
+
+                  {slot === "Terzo tempo" && (
+                    <span style={{ fontSize: 14 }}>🍺 🍕 🎉</span>
+                  )}
+
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: "#666",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    {slot === "Terzo tempo"
+                      ? players.length > 0
+                        ? `${players.length} giocatori`
+                        : ""
+                      : `${players.length}/4`}
+                  </span>
+                </div>
+
+                {players.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      marginLeft: 20,
+                      fontSize: 13,
+                      color: "#444",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {players.join(", ")}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                {!mine && (
+                  <button
+                    style={{
+                      ...styles.button,
+                      background: isFull ? "#dc2626" : "#18a34a",
+                      color: "white",
+                      fontWeight: "bold",
+                    }}
+                    onClick={async () => {
+                      if (isFull) {
+                        alert("Mi spiace, lo slot risulta completo, ma tanto sai come sono le regole...");
+                        return;
+                      }
+
+                      await supabase.from("bookings").insert({
+                        week_key: week.weekKey,
+                        month_key: week.monthKey,
+                        slot,
+                        player: user,
+                        archived: false,
+                      });
+
+                      loadBookings();
+                    }}
+                  >
+                    PRENOTA
+                  </button>
+                )}
+
+                {mine && (
+                  <button
+                    style={{
+                      ...styles.button,
+                      background: "#dc2626",
+                      color: "white",
+                      fontWeight: "bold",
+                    }}
+                    onClick={async () => {
+                      await supabase
+                        .from("bookings")
+                        .delete()
+                        .eq("week_key", week.weekKey)
+                        .eq("slot", slot)
+                        .eq("player", user)
+                        .eq("archived", false);
+
+                      loadBookings();
+                    }}
+                  >
+                    SPRENOTA
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      <div style={{ padding: 20, textAlign: "center" }}>
+        <button
+          style={{
+            ...styles.button,
+            width: "100%",
+            background: "#111",
+            color: "white",
+            fontWeight: "bold",
+          }}
+          onClick={() => {
+            setUser(null);
+            setPassword("");
+          }}
+        >
+          LOGOUT
+        </button>
+      </div>
     </div>
   );
 }
