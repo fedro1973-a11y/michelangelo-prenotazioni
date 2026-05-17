@@ -37,18 +37,20 @@ function getTargetWeek() {
   const now = new Date();
   const day = now.getDay(); // 0 domenica - 6 sabato
 
-  const isSaturdayAfterNoon =
-    day === 6 &&
-    (now.getHours() > 12 || (now.getHours() === 12 && now.getMinutes() >= 1));
+  const currentSaturday = new Date(now);
+  currentSaturday.setDate(now.getDate() + ((6 - day + 7) % 7));
+  currentSaturday.setHours(12, 0, 0, 0);
+
+  const afterSwitch = now >= currentSaturday;
 
   const start = new Date(now);
 
-  if (isSaturdayAfterNoon) {
-    // settimana successiva
+  if (afterSwitch) {
+    // mostra settimana successiva
     const daysUntilNextTuesday = ((9 - day) % 7) || 7;
     start.setDate(now.getDate() + daysUntilNextTuesday);
   } else {
-    // settimana corrente
+    // mostra settimana corrente
     const daysFromTuesday = day >= 2 ? day - 2 : day + 5;
     start.setDate(now.getDate() - daysFromTuesday);
   }
