@@ -35,28 +35,43 @@ const SLOT_LABELS = [
 
 function getTargetWeek() {
   const now = new Date();
-  const day = now.getDay(); // 0=domenica, 1=lunedì ... 6=sabato
 
-  const nextTuesday = new Date(now);
-  const offset = (day <= 2) ? 2 - day : 9 - day;
-  nextTuesday.setDate(now.getDate() + offset);
-  nextTuesday.setHours(0, 0, 0, 0);
+  // trova il sabato della settimana corrente alle 12:00
+  const currentDay = now.getDay(); // 0=domenica ... 6=sabato
+  const daysToSaturday = currentDay === 6 ? 0 : 6 - currentDay;
 
-  const thisSaturday = new Date(nextTuesday);
-  thisSaturday.setDate(nextTuesday.getDate() + 4);
-  thisSaturday.setHours(12, 0, 0, 0);
+  const saturdayNoon = new Date(now);
+  saturdayNoon.setDate(now.getDate() + daysToSaturday);
+  saturdayNoon.setHours(12, 0, 0, 0);
 
-  const start = new Date(nextTuesday);
-  const end = new Date(thisSaturday);
+  // fino a sabato ore 12:00 si prenota la settimana corrente
+  // dopo sabato ore 12:00 si passa alla settimana successiva
+  const targetTuesday = new Date(now);
+
+  if (now >= saturdayNoon) {
+    // settimana successiva
+    const daysUntilNextTuesday = ((9 - currentDay) % 7) || 7;
+    targetTuesday.setDate(now.getDate() + daysUntilNextTuesday);
+  } else {
+    // settimana corrente
+    const daysFromTuesday = currentDay >= 2 ? currentDay - 2 : currentDay + 5;
+    targetTuesday.setDate(now.getDate() - daysFromTuesday);
+  }
+
+  targetTuesday.setHours(0, 0, 0, 0);
+
+  const saturday = new Date(targetTuesday);
+  saturday.setDate(targetTuesday.getDate() + 4);
+  saturday.setHours(12, 0, 0, 0);
 
   const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
   return {
-    weekKey: start.toISOString().slice(0,10),
-    label: `Settimana dal ${fmt(start)}`,
-    monthKey: `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}`,
-    startDate: start,
-    endDate: end
+    weekKey: targetTuesday.toISOString().slice(0,10),
+    label: `Settimana dal ${fmt(targetTuesday)}`,
+    monthKey: `${targetTuesday.getFullYear()}-${String(targetTuesday.getMonth()+1).padStart(2,'0')}`,
+    startDate: targetTuesday,
+    endDate: saturday
   };
 }
 
