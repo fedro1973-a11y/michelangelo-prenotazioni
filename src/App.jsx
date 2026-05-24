@@ -36,33 +36,27 @@ const SLOT_LABELS = [
 function getTargetWeek() {
   const now = new Date();
 
-  // trova il sabato della settimana corrente alle 12:00
+  // nuova logica: da domenica 00:01 a sabato 23:59
+  // si prenota la settimana che inizia il martedì successivo
+
   const currentDay = now.getDay(); // 0=domenica ... 6=sabato
-  const daysToSaturday = currentDay === 6 ? 0 : 6 - currentDay;
 
-  const saturdayNoon = new Date(now);
-  saturdayNoon.setDate(now.getDate() + daysToSaturday);
-  saturdayNoon.setHours(12, 0, 0, 0);
-
-  // fino a sabato ore 12:00 si prenota la settimana corrente
-  // dopo sabato ore 12:00 si passa alla settimana successiva
+  // trova il prossimo martedì
   const targetTuesday = new Date(now);
+  const daysUntilTuesday = currentDay === 0
+    ? 2
+    : currentDay === 1
+    ? 1
+    : currentDay === 2
+    ? 0
+    : 9 - currentDay;
 
-  if (now >= saturdayNoon) {
-    // settimana successiva
-    const daysUntilNextTuesday = ((9 - currentDay) % 7) || 7;
-    targetTuesday.setDate(now.getDate() + daysUntilNextTuesday);
-  } else {
-    // settimana corrente
-    const daysFromTuesday = currentDay >= 2 ? currentDay - 2 : currentDay + 5;
-    targetTuesday.setDate(now.getDate() - daysFromTuesday);
-  }
-
+  targetTuesday.setDate(now.getDate() + daysUntilTuesday);
   targetTuesday.setHours(0, 0, 0, 0);
 
   const saturday = new Date(targetTuesday);
   saturday.setDate(targetTuesday.getDate() + 4);
-  saturday.setHours(12, 0, 0, 0);
+  saturday.setHours(23, 59, 59, 999);
 
   const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
