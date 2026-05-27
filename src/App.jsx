@@ -35,23 +35,28 @@ const SLOT_LABELS = [
 
 function getTargetWeek() {
   const now = new Date();
-
-  // nuova logica: da domenica 00:01 a sabato 23:59
-  // si prenota la settimana che inizia il martedì successivo
-
   const currentDay = now.getDay(); // 0=domenica ... 6=sabato
 
-  // trova il prossimo martedì
-  const targetTuesday = new Date(now);
-  const daysUntilTuesday = currentDay === 0
-    ? 2
-    : currentDay === 1
-    ? 1
-    : currentDay === 2
-    ? 0
-    : 9 - currentDay;
+  // Regola:
+  // Domenica e lunedì -> settimana che inizia il martedì successivo
+  // Martedì-sabato -> settimana corrente
 
-  targetTuesday.setDate(now.getDate() + daysUntilTuesday);
+  const targetTuesday = new Date(now);
+
+  let daysToAdd;
+
+  if (currentDay === 0) {
+    // domenica -> martedì successivo
+    daysToAdd = 2;
+  } else if (currentDay === 1) {
+    // lunedì -> martedì successivo
+    daysToAdd = 1;
+  } else {
+    // martedì-sabato -> martedì corrente
+    daysToAdd = -(currentDay - 2);
+  }
+
+  targetTuesday.setDate(now.getDate() + daysToAdd);
   targetTuesday.setHours(0, 0, 0, 0);
 
   const saturday = new Date(targetTuesday);
