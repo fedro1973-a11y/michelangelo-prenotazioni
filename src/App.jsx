@@ -18,6 +18,7 @@ const USERS = {
   RAFFAGLIO: "raffa",
   RIZZO: "bomber",
   TOGNOLI: "frency",
+TOMASONI: "manuel",
 };
 
 const SLOT_LABELS = [
