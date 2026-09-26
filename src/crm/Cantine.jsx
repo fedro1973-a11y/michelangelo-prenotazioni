@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
+import NuovaCantina from "./NuovaCantina";
 
 export default function Cantine() {
   const [cantine, setCantine] = useState([]);
+  const [mostraModulo, setMostraModulo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -35,7 +37,32 @@ export default function Cantine() {
 
   return (
     <section style={{ marginTop: 25 }}>
-      <h2>Cantine</h2>
+      <div style={{
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center"
+}}>
+  <h2>Cantine</h2>
+
+  <button
+    onClick={() => setMostraModulo(!mostraModulo)}
+  >
+    {mostraModulo ? "ANNULLA" : "+ NUOVA CANTINA"}
+  </button>
+</div>
+
+{mostraModulo && (
+  <div style={{
+    padding: 20,
+    marginBottom: 20,
+    background: "white",
+    border: "1px solid #ddd",
+    borderRadius: 8
+  }}>
+    <h3>Nuova cantina</h3>
+    <NuovaCantina />
+  </div>
+)}
 
       {loading && <p>Caricamento...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
