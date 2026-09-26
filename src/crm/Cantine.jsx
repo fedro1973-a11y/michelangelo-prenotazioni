@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
 import NuovaCantina from "./NuovaCantina";
 
+
 export default function Cantine() {
   const [cantine, setCantine] = useState([]);
   const [mostraModulo, setMostraModulo] = useState(false);
+  const [aggiornamento, setAggiornamento] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,7 +35,7 @@ export default function Cantine() {
     return () => {
       active = false;
     };
-  }, []);
+   }, [aggiornamento]);
 
   return (
     <section style={{ marginTop: 25 }}>
@@ -60,7 +62,12 @@ export default function Cantine() {
     borderRadius: 8
   }}>
     <h3>Nuova cantina</h3>
-    <NuovaCantina />
+   <NuovaCantina
+  onSalvata={() => {
+    setMostraModulo(false);
+    setAggiornamento((precedente) => precedente + 1);
+  }}
+/>
   </div>
 )}
 

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
 import Cantine from "./Cantine";
+import Segnalatori from "./Segnalatori";
 
 export default function CRM() {
   const [session, setSession] = useState(null);
+  const [pagina, setPagina] = useState("cantine");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -176,7 +178,28 @@ export default function CRM() {
       </button>
     </header>
 
-    <Cantine />
+    <nav style={{
+  display: "flex",
+  gap: 8,
+  marginBottom: 20
+}}>
+  <button
+    onClick={() => setPagina("cantine")}
+    disabled={pagina === "cantine"}
+  >
+    CANTINE
+  </button>
+
+  <button
+    onClick={() => setPagina("segnalatori")}
+    disabled={pagina === "segnalatori"}
+  >
+    SEGNALATORI
+  </button>
+</nav>
+
+{pagina === "cantine" && <Cantine />}
+{pagina === "segnalatori" && <Segnalatori />}
   </div>
 );
 }

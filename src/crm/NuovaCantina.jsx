@@ -2,9 +2,64 @@
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
 
-export default function NuovaCantina() {
+export default function NuovaCantina({ onSalvata }) {
   const [segnalatori, setSegnalatori] = useState([]);
   const [erroreSegnalatori, setErroreSegnalatori] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [errore, setErrore] = useState("");
+
+async function salvaCantina(e) {
+  e.preventDefault();
+  if (saving) return;
+
+  setSaving(true);
+  setErrore("");
+
+  try {
+    const dati = {
+      ragione_sociale: form.ragione_sociale.trim(),
+      partita_iva: form.partita_iva.trim() || null,
+      indirizzo: form.indirizzo.trim() || null,
+      referente: form.referente.trim() || null,
+      cellulare: form.cellulare.trim() || null,
+      telefono: form.telefono.trim() || null,
+      email: form.email.trim() || null,
+      stato: form.stato,
+      id_portale: form.id_portale.trim() || null,
+      segnalatore_id: form.segnalatore_id
+        ? Number(form.segnalatore_id)
+        : null
+    };
+
+    if (!dati.ragione_sociale) {
+      throw new Error("Inserisci la ragione sociale.");
+    }
+
+    if (dati.id_portale &&
+        !/^[0-9]{1,5}$/.test(dati.id_portale)) {
+      throw new Error("L'ID Portale deve contenere da 1 a 5 cifre.");
+    }
+
+    if (dati.stato === "ATTIVO" && !dati.id_portale) {
+      throw new Error("L'ID Portale è obbligatorio per le cantine attive.");
+    }
+
+    const { error } = await crmSupabase
+      .from("crm_cantine")
+      .insert(dati);
+
+    if (error) {
+      console.error(error);
+      throw new Error("Salvataggio non riuscito.");
+    }
+
+    if (onSalvata) onSalvata();
+  } catch (err) {
+    setErrore(err.message);
+  } finally {
+    setSaving(false);
+  }
+}
 
   const [form, setForm] = useState({
     ragione_sociale: "",
@@ -67,7 +122,7 @@ export default function NuovaCantina() {
 
   return (
     <form
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={salvaCantina}
       style={{
         display: "grid",
         gridTemplateColumns:
@@ -158,16 +213,18 @@ export default function NuovaCantina() {
         )}
       </label>
 
-      <div
-        style={{
-          gridColumn: "1 / -1",
-          textAlign: "right"
-        }}
-      >
-        <button type="submit" disabled>
-          SALVA CANTINA
-        </button>
-      </div>
+      <div style={{
+  gridColumn: "1 / -1",
+  textAlign: "right"
+}}>
+  {errore && (
+    <p style={{ color: "red" }}>{errore}</p>
+  )}
+
+  <button type="submit" disabled={saving}>
+    {saving ? "Salvataggio..." : "SALVA CANTINA"}
+  </button>
+</div>
     </form>
   );
 }
