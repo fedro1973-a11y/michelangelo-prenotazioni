@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
+import Cantine from "./Cantine";
 
 export default function CRM() {
   const [session, setSession] = useState(null);
@@ -158,12 +159,24 @@ export default function CRM() {
   }
 
   return (
-    <div style={style}>
+  <div style={{
+    maxWidth: 1200,
+    margin: "20px auto",
+    padding: 20,
+    fontFamily: "Arial"
+  }}>
+    <header style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }}>
       <h2>Storeitaly CRM</h2>
-      <p>Accesso autorizzato.</p>
       <button onClick={logout} disabled={busy}>
         ESCI
       </button>
-    </div>
-  );
+    </header>
+
+    <Cantine />
+  </div>
+);
 }
