@@ -1,16 +1,26 @@
+
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
 
 const FORM_VUOTO = {
+  id_portale: "",
+  nome_portale: "",
   ragione_sociale: "",
   partita_iva: "",
   indirizzo: "",
+  citta: "",
+  provincia: "",
+  regione: "",
   referente: "",
   cellulare: "",
   telefono: "",
   email: "",
+  note: "",
+  referente_2: "",
+  cellulare_2: "",
+  telefono_2: "",
+  email_2: "",
   stato: "NUOVO",
-  id_portale: "",
   segnalatore_id: ""
 };
 
@@ -18,19 +28,15 @@ function preparaForm(cantina) {
   if (!cantina) return { ...FORM_VUOTO };
 
   return {
-    ragione_sociale: cantina.ragione_sociale ?? "",
-    partita_iva: cantina.partita_iva ?? "",
-    indirizzo: cantina.indirizzo ?? "",
-    referente: cantina.referente ?? "",
-    cellulare: cantina.cellulare ?? "",
-    telefono: cantina.telefono ?? "",
-    email: cantina.email ?? "",
-    stato: cantina.stato ?? "NUOVO",
-    id_portale: cantina.id_portale ?? "",
-    segnalatore_id:
-      cantina.segnalatore_id == null
-        ? ""
-        : String(cantina.segnalatore_id)
+    ...FORM_VUOTO,
+    ...Object.fromEntries(
+      Object.keys(FORM_VUOTO).map((campo) => [
+        campo,
+        cantina[campo] == null
+          ? ""
+          : String(cantina[campo])
+      ])
+    )
   };
 }
 
@@ -39,7 +45,7 @@ export default function NuovaCantina({
   onSalvata
 }) {
   const modifica = cantina !== null;
-
+  
   const [form, setForm] = useState(() =>
     preparaForm(cantina)
   );
@@ -98,27 +104,35 @@ export default function NuovaCantina({
 
     try {
       const dati = {
+        id_portale: form.id_portale.trim() || null,
+        nome_portale: form.nome_portale.trim() || null,
         ragione_sociale: form.ragione_sociale.trim(),
         indirizzo: form.indirizzo.trim() || null,
+        citta: form.citta.trim() || null,
+        provincia: form.provincia.trim() || null,
+        regione: form.regione.trim() || null,
         referente: form.referente.trim() || null,
         cellulare: form.cellulare.trim() || null,
         telefono: form.telefono.trim() || null,
         email: form.email.trim() || null,
+        note: form.note.trim() || null,
+referente_2: form.referente_2.trim() || null,
+cellulare_2: form.cellulare_2.trim() || null,
+telefono_2: form.telefono_2.trim() || null,
+email_2: form.email_2.trim() || null,
         stato: form.stato,
-        id_portale: form.id_portale.trim() || null,
         segnalatore_id: form.segnalatore_id
           ? Number(form.segnalatore_id)
           : null
       };
 
-      if (!modifica) {
-        dati.partita_iva =
-          form.partita_iva.trim() || null;
+      if (!dati.ragione_sociale) {
+        throw new Error("Inserisci la ragione sociale.");
       }
 
-      if (!dati.ragione_sociale) {
+      if (!modifica && !dati.nome_portale) {
         throw new Error(
-          "Inserisci la ragione sociale."
+          "Inserisci il nome cantina sul portale."
         );
       }
 
@@ -153,6 +167,9 @@ export default function NuovaCantina({
           .select("id")
           .single();
       } else {
+        dati.partita_iva =
+          form.partita_iva.trim() || null;
+
         risultato = await crmSupabase
           .from("crm_cantine")
           .insert(dati)
@@ -162,31 +179,43 @@ export default function NuovaCantina({
 
       if (risultato.error) {
         console.error(risultato.error);
-        throw new Error(
-          "Salvataggio non riuscito."
-        );
+        throw new Error("Salvataggio non riuscito.");
       }
 
-      if (onSalvata) onSalvata();
+      onSalvata?.();
     } catch (err) {
-      setErrore(
-        err.message || "Errore imprevisto."
-      );
+      setErrore(err.message || "Errore imprevisto.");
     } finally {
       setSaving(false);
     }
   }
 
   const campi = [
-    ["ragione_sociale", "Ragione sociale"],
-    ["partita_iva", "Partita IVA"],
-    ["indirizzo", "Indirizzo"],
-    ["referente", "Referente"],
-    ["cellulare", "Cellulare"],
-    ["telefono", "Telefono"],
-    ["email", "Email"],
-    ["id_portale", "ID Portale"]
-  ];
+  ["id_portale", "ID Portale"],
+  ["nome_portale", "Nome cantina sul portale"],
+  ["ragione_sociale", "Ragione sociale"],
+  ["partita_iva", "Partita IVA"],
+  ["indirizzo", "Indirizzo"],
+  ["citta", "Città"],
+  ["provincia", "Provincia"],
+  ["regione", "Regione"],
+  ["referente", "Referente"],
+  ["cellulare", "Cellulare"],
+  ["telefono", "Telefono"],
+  ["email", "Email"],
+  ["referente_2", "Referente 2"],
+  ["cellulare_2", "Cellulare 2"],
+  ["telefono_2", "Telefono 2"],
+  ["email_2", "Email 2"],
+  ["note", "Note cantina"]
+];
+
+  const stileCampo = {
+    width: "100%",
+    padding: "6px 8px",
+    boxSizing: "border-box",
+    minHeight: 32
+  };
 
   return (
     <form
@@ -194,15 +223,15 @@ export default function NuovaCantina({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 12
+          "repeat(auto-fit, minmax(190px, 1fr))",
+        gap: "9px 12px"
       }}
     >
       {modifica && (
         <div
           style={{
             gridColumn: "1 / -1",
-            fontSize: 13
+            fontSize: 12
           }}
         >
           ID anagrafica: {cantina.id}
@@ -214,23 +243,24 @@ export default function NuovaCantina({
           modifica && campo === "partita_iva";
 
         return (
-          <label key={campo}>
-            <div style={{ marginBottom: 4 }}>
+          <label key={campo} style={{ fontSize: 12 }}>
+            <div style={{ marginBottom: 3 }}>
               {etichetta}
             </div>
 
             <input
               type={
-                campo === "email"
-                  ? "email"
-                  : "text"
-              }
+  campo === "email" || campo === "email_2"
+    ? "email"
+    : "text"
+}
               value={form[campo]}
               onChange={(e) =>
                 aggiorna(campo, e.target.value)
               }
               required={
-                campo === "ragione_sociale"
+                campo === "ragione_sociale" ||
+                (!modifica && campo === "nome_portale")
               }
               readOnly={bloccato}
               title={
@@ -238,15 +268,9 @@ export default function NuovaCantina({
                   ? "Per un nuovo soggetto giuridico, crea una nuova cantina."
                   : undefined
               }
-              maxLength={
-                campo === "id_portale"
-                  ? 5
-                  : undefined
-              }
+            maxLength={campo === "id_portale" ? 5 : undefined}
               style={{
-                width: "100%",
-                padding: 8,
-                boxSizing: "border-box",
+                ...stileCampo,
                 background: bloccato
                   ? "#f1f5f9"
                   : "white"
@@ -256,8 +280,8 @@ export default function NuovaCantina({
         );
       })}
 
-      <label>
-        <div style={{ marginBottom: 4 }}>
+      <label style={{ fontSize: 12 }}>
+        <div style={{ marginBottom: 3 }}>
           Stato
         </div>
 
@@ -266,83 +290,53 @@ export default function NuovaCantina({
           onChange={(e) =>
             aggiorna("stato", e.target.value)
           }
-          style={{
-            width: "100%",
-            padding: 8
-          }}
+          style={stileCampo}
         >
-          <option value="NUOVO">
-            NUOVO
-          </option>
+          <option value="NUOVO">NUOVO</option>
           <option value="IN TRATTATIVA">
             IN TRATTATIVA
           </option>
           <option value="NON INTERESSATO">
             NON INTERESSATO
           </option>
-          <option value="ATTIVO">
-            ATTIVO
-          </option>
-          <option value="CESSATO">
-            CESSATO
-          </option>
+          <option value="ATTIVO">ATTIVO</option>
+          <option value="CESSATO">CESSATO</option>
         </select>
       </label>
 
-      <label>
-        <div style={{ marginBottom: 4 }}>
+      <label style={{ fontSize: 12 }}>
+        <div style={{ marginBottom: 3 }}>
           Segnalatore
         </div>
 
         <select
           value={form.segnalatore_id}
           onChange={(e) =>
-            aggiorna(
-              "segnalatore_id",
-              e.target.value
-            )
+            aggiorna("segnalatore_id", e.target.value)
           }
-          disabled={
-            Boolean(erroreSegnalatori)
-          }
-          style={{
-            width: "100%",
-            padding: 8
-          }}
+          disabled={Boolean(erroreSegnalatori)}
+          style={stileCampo}
         >
-          <option value="">
-            Nessun segnalatore
-          </option>
+          <option value="">Nessun segnalatore</option>
 
           {segnalatori
             .filter(
-              (segnalatore) =>
-                segnalatore.attivo ||
-                String(segnalatore.id) ===
-                  form.segnalatore_id
+              (s) =>
+                s.attivo ||
+                String(s.id) === form.segnalatore_id
             )
-            .map((segnalatore) => (
-              <option
-                key={segnalatore.id}
-                value={segnalatore.id}
-              >
-                {segnalatore.nome}
-                {!segnalatore.attivo
-                  ? " (disattivato)"
-                  : ""}
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nome}
+                {!s.attivo ? " (disattivato)" : ""}
               </option>
             ))}
         </select>
 
         {erroreSegnalatori && (
-          <p
-            style={{
-              color: "red",
-              fontSize: 12
-            }}
-          >
+          <div style={{ color: "red" }}>
             {erroreSegnalatori}
-          </p>
+          </div>
         )}
       </label>
 
@@ -354,22 +348,24 @@ export default function NuovaCantina({
             margin: 0
           }}
         >
-          Se cambia il soggetto giuridico
-          o la partita IVA, crea una
-          nuova anagrafica.
+          Se cambia il soggetto giuridico o la
+          partita IVA, crea una nuova anagrafica.
         </p>
       )}
 
       <div
         style={{
           gridColumn: "1 / -1",
-          textAlign: "right"
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: 12
         }}
       >
         {errore && (
-          <p style={{ color: "red" }}>
+          <span style={{ color: "red", fontSize: 12 }}>
             {errore}
-          </p>
+          </span>
         )}
 
         <button
@@ -377,15 +373,13 @@ export default function NuovaCantina({
           disabled={saving}
           style={{
             position: "relative",
-            minWidth: 165,
-            minHeight: 36
+            minWidth: 155,
+            minHeight: 34
           }}
         >
           <span
             style={{
-              visibility: saving
-                ? "hidden"
-                : "visible"
+              visibility: saving ? "hidden" : "visible"
             }}
           >
             {modifica
@@ -405,7 +399,7 @@ export default function NuovaCantina({
                 justifyContent: "center"
               }}
             >
-              ◌ Salvataggio
+              Salvataggio...
             </span>
           )}
         </button>
