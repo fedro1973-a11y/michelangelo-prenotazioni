@@ -1,11 +1,12 @@
+
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
 import NuovaCantina from "./NuovaCantina";
 
-
 export default function Cantine() {
   const [cantine, setCantine] = useState([]);
   const [mostraModulo, setMostraModulo] = useState(false);
+  const [cantinaInModifica, setCantinaInModifica] = useState(null);
   const [aggiornamento, setAggiornamento] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,9 +15,14 @@ export default function Cantine() {
     let active = true;
 
     async function caricaCantine() {
+      setLoading(true);
+      setError("");
+
       const { data, error } = await crmSupabase
         .from("crm_cantine")
-        .select("id, ragione_sociale, stato, referente, email")
+        .select(
+          "id, ragione_sociale, partita_iva, indirizzo, referente, cellulare, telefono, email, stato, id_portale, segnalatore_id"
+        )
         .order("ragione_sociale");
 
       if (!active) return;
@@ -24,7 +30,7 @@ export default function Cantine() {
       if (error) {
         setError("Errore durante il caricamento delle cantine.");
       } else {
-        setCantine(data);
+        setCantine(data ?? []);
       }
 
       setLoading(false);
@@ -35,44 +41,90 @@ export default function Cantine() {
     return () => {
       active = false;
     };
-   }, [aggiornamento]);
+  }, [aggiornamento]);
+
+  function nuovaCantina() {
+    if (mostraModulo && !cantinaInModifica) {
+      setMostraModulo(false);
+    } else {
+      setCantinaInModifica(null);
+      setMostraModulo(true);
+    }
+  }
+
+  function modificaCantina(cantina) {
+    setCantinaInModifica(cantina);
+    setMostraModulo(true);
+  }
+
+  function annulla() {
+    setMostraModulo(false);
+    setCantinaInModifica(null);
+  }
+
+  function salvata() {
+    annulla();
+    setAggiornamento((precedente) => precedente + 1);
+  }
 
   return (
     <section style={{ marginTop: 25 }}>
-      <div style={{
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center"
-}}>
-  <h2>Cantine</h2>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}
+      >
+        <h2>Cantine</h2>
 
-  <button
-    onClick={() => setMostraModulo(!mostraModulo)}
-  >
-    {mostraModulo ? "ANNULLA" : "+ NUOVA CANTINA"}
-  </button>
-</div>
+        <button onClick={nuovaCantina}>
+          + NUOVA CANTINA
+        </button>
+      </div>
 
-{mostraModulo && (
-  <div style={{
-    padding: 20,
-    marginBottom: 20,
-    background: "white",
-    border: "1px solid #ddd",
-    borderRadius: 8
-  }}>
-    <h3>Nuova cantina</h3>
-   <NuovaCantina
-  onSalvata={() => {
-    setMostraModulo(false);
-    setAggiornamento((precedente) => precedente + 1);
-  }}
-/>
-  </div>
-)}
+      {mostraModulo && (
+        <div
+          style={{
+            padding: 20,
+            marginBottom: 20,
+            background: "white",
+            border: "1px solid #ddd",
+            borderRadius: 8
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12
+            }}
+          >
+            <h3>
+              {cantinaInModifica
+                ? `Modifica: ${cantinaInModifica.ragione_sociale}`
+                : "Nuova cantina"}
+            </h3>
+
+            <button type="button" onClick={annulla}>
+              ANNULLA
+            </button>
+          </div>
+
+          <NuovaCantina
+            key={cantinaInModifica?.id ?? "nuova"}
+            cantina={cantinaInModifica}
+            onSalvata={salvata}
+          />
+        </div>
+      )}
 
       {loading && <p>Caricamento...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {error && (
+        <p style={{ color: "red" }}>{error}</p>
+      )}
 
       {!loading && !error && cantine.length === 0 && (
         <p>Nessuna cantina presente.</p>
@@ -86,6 +138,7 @@ export default function Cantine() {
               <th>Stato</th>
               <th>Referente</th>
               <th>Email</th>
+              <th>Azioni</th>
             </tr>
           </thead>
 
@@ -96,6 +149,14 @@ export default function Cantine() {
                 <td>{cantina.stato}</td>
                 <td>{cantina.referente}</td>
                 <td>{cantina.email}</td>
+                <td>
+                  <button
+                    type="button"
+                    onClick={() => modificaCantina(cantina)}
+                  >
+                    MODIFICA
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
