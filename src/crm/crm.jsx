@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
 import Cantine from "./Cantine";
 import Segnalatori from "./Segnalatori";
+import Dashboard from "./Dashboard";
 
 export default function CRM() {
   const [session, setSession] = useState(null);
-  const [pagina, setPagina] = useState("cantine");
+  const [pagina, setPagina] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -183,6 +184,14 @@ export default function CRM() {
   gap: 8,
   marginBottom: 20
 }}>
+
+  <button
+  onClick={() => setPagina("dashboard")}
+  disabled={pagina === "dashboard"}
+>
+  DASHBOARD
+</button>
+
   <button
     onClick={() => setPagina("cantine")}
     disabled={pagina === "cantine"}
@@ -198,6 +207,7 @@ export default function CRM() {
   </button>
 </nav>
 
+{pagina === "dashboard" && <Dashboard />}
 {pagina === "cantine" && <Cantine />}
 {pagina === "segnalatori" && <Segnalatori />}
   </div>
