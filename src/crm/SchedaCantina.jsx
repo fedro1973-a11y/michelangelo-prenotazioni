@@ -15,13 +15,19 @@ function formattaData(valore) {
   }).format(new Date(valore));
 }
 
-export default function SchedaCantina({ cantinaId, onChiudi }) {
+export default function SchedaCantina({
+  cantinaId,
+  attivita = null,
+  onChiudi
+})  {
   const [cantina, setCantina] = useState(null);
   const [contatti, setContatti] = useState([]);
   const [vista, setVista] = useState("");
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState("");
   const [aggiornamento, setAggiornamento] = useState(0);
+  const [riprogramma, setRiprogramma] = useState(false);
+  const [nuovaScadenza, setNuovaScadenza] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -71,6 +77,51 @@ export default function SchedaCantina({ cantinaId, onChiudi }) {
     setAggiornamento((precedente) => precedente + 1);
   }
 
+  async function completaAttivita() {
+  if (!attivita) return;
+
+  const conferma = window.confirm(
+    "Vuoi segnare questa attività come completata?"
+  );
+
+  if (!conferma) return;
+
+  const { error } = await crmSupabase
+    .from("crm_attivita")
+    .update({
+      completata: true,
+      completata_il: new Date().toISOString()
+    })
+    .eq("id", attivita.id);
+
+  if (error) {
+    console.error(error);
+    window.alert("Errore durante il completamento dell'attività.");
+    return;
+  }
+
+  onChiudi();
+}
+
+async function salvaNuovaScadenza() {
+  if (!attivita || !nuovaScadenza) return;
+
+  const { error } = await crmSupabase
+    .from("crm_attivita")
+    .update({
+      scadenza: `${nuovaScadenza}T12:00:00+02:00`
+    })
+    .eq("id", attivita.id);
+
+  if (error) {
+    console.error(error);
+    window.alert("Errore durante la riprogrammazione dell'attività.");
+    return;
+  }
+
+  onChiudi();
+}
+
   const stilePulsante = {
     padding: "5px 10px",
     fontSize: 12,
@@ -101,7 +152,87 @@ export default function SchedaCantina({ cantinaId, onChiudi }) {
   }
 
   return (
-    <section style={{ marginTop: 12 }}>
+  <section style={{ marginTop: 12 }}>
+
+    {attivita && (
+      <div
+        style={{
+          marginBottom: 12,
+          padding: 10,
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          background: "#f7f7f7"
+        }}
+      >
+        <strong>ATTIVITÀ DA GESTIRE</strong>
+
+        <div style={{ marginTop: 8 }}>
+  {!riprogramma ? (
+    <div style={{ display: "flex", gap: 8 }}>
+      <button
+        type="button"
+        onClick={completaAttivita}
+      >
+        COMPLETA ATTIVITÀ
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setRiprogramma(true)}
+      >
+        RIPROGRAMMA
+      </button>
+    </div>
+  ) : (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        flexWrap: "wrap"
+      }}
+    >
+      <input
+        type="date"
+        value={nuovaScadenza}
+        onChange={(e) => setNuovaScadenza(e.target.value)}
+      />
+
+      <button
+        type="button"
+        onClick={salvaNuovaScadenza}
+        disabled={!nuovaScadenza}
+      >
+        SALVA NUOVA DATA
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setRiprogramma(false);
+          setNuovaScadenza("");
+        }}
+      >
+        ANNULLA
+      </button>
+    </div>
+  )}
+</div>
+      </div>
+    )}
+
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 10
+      }}
+    >
+
+    </div>
       <div
         style={{
           display: "flex",

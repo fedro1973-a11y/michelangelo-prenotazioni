@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
+import SchedaCantina from "./SchedaCantina";
 
 export default function Dashboard() {
   const [attivita, setAttivita] = useState([]);
+  const [attivitaAperta, setAttivitaAperta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState("");
 
@@ -81,6 +83,19 @@ export default function Dashboard() {
     background: "#fff"
   };
 
+ if (attivitaAperta !== null) {
+  return (
+    <SchedaCantina
+      cantinaId={attivitaAperta.cantina_id}
+      attivita={attivitaAperta}
+      onChiudi={() => {
+        setAttivitaAperta(null);
+        caricaAttivita();
+      }}
+    />
+  );
+}
+
   if (loading) {
     return <p>Caricamento attività...</p>;
   }
@@ -141,6 +156,9 @@ export default function Dashboard() {
               <th style={{ textAlign: "left", padding: 8 }}>
                 DATA
               </th>
+              <th style={{ textAlign: "center", padding: 8 }}>
+                SCHEDA
+              </th>
               <th style={{ textAlign: "left", padding: 8 }}>
                 CANTINA
               </th>
@@ -161,6 +179,14 @@ export default function Dashboard() {
                 <td style={{ padding: 8 }}>
                   {dataLocale(a.scadenza)}
                 </td>
+
+                <td style={{ padding: 8, textAlign: "center" }}>
+  <button
+  onClick={() => setAttivitaAperta(a)}
+>
+  SCHEDA
+</button>
+</td>
 
                 <td style={{ padding: 8, fontWeight: "bold" }}>
                   {a.crm_cantine?.nome_portale || "—"}
