@@ -7,6 +7,7 @@ import Dashboard from "./Dashboard";
 export default function CRM() {
   const [session, setSession] = useState(null);
   const [pagina, setPagina] = useState("dashboard");
+  const [dashboardKey, setDashboardKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -186,8 +187,11 @@ export default function CRM() {
 }}>
 
   <button
-  onClick={() => setPagina("dashboard")}
-  disabled={pagina === "dashboard"}
+  onClick={() => {
+  setPagina("dashboard");
+  setDashboardKey((k) => k + 1);
+}}
+
 >
   DASHBOARD
 </button>
@@ -207,7 +211,7 @@ export default function CRM() {
   </button>
 </nav>
 
-{pagina === "dashboard" && <Dashboard />}
+{pagina === "dashboard" && <Dashboard key={dashboardKey} />}
 {pagina === "cantine" && <Cantine />}
 {pagina === "segnalatori" && <Segnalatori />}
   </div>

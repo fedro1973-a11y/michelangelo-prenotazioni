@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [attivitaAperta, setAttivitaAperta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState("");
+  const [filtro, setFiltro] = useState("DA_GESTIRE");
 
   useEffect(() => {
     caricaAttivita();
@@ -74,6 +75,15 @@ export default function Dashboard() {
 
   const daGestire = [...scadute, ...oggiDaFare];
 
+  const attivitaVisualizzate =
+  filtro === "SCADUTE"
+    ? scadute
+    : filtro === "OGGI"
+      ? oggiDaFare
+      : filtro === "PROSSIME"
+        ? prossime
+        : daGestire;
+
   const boxStyle = {
     flex: 1,
     minWidth: 180,
@@ -102,7 +112,12 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h3>Dashboard</h3>
+      <h3
+  onClick={() => setFiltro("DA_GESTIRE")}
+  style={{ cursor: "pointer" }}
+>
+  Dashboard
+</h3>
 
       {errore && (
         <p style={{ color: "red" }}>
@@ -132,17 +147,23 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div style={boxStyle}>
-          <div style={{ fontSize: 13 }}>PROSSIME</div>
-          <div style={{ fontSize: 30, fontWeight: "bold" }}>
-            {prossime.length}
-          </div>
-        </div>
+        <div
+  style={{
+    ...boxStyle,
+    cursor: "pointer"
+  }}
+  onClick={() => setFiltro("PROSSIME")}
+>
+  <div style={{ fontSize: 13 }}>PROSSIME</div>
+  <div style={{ fontSize: 30, fontWeight: "bold" }}>
+    {prossime.length}
+  </div>
+</div>
       </div>
 
       <h3>Attività da gestire</h3>
 
-      {daGestire.length === 0 ? (
+      {attivitaVisualizzate.length === 0 ? (
         <p>Nessuna attività scaduta o prevista per oggi.</p>
       ) : (
         <table
@@ -169,7 +190,7 @@ export default function Dashboard() {
           </thead>
 
           <tbody>
-            {daGestire.map(a => (
+            {attivitaVisualizzate.map(a => (
               <tr
                 key={a.id}
                 style={{

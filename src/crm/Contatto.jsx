@@ -19,7 +19,9 @@ export default function Contatto({ cantina, onSalvato, onAnnulla }) {
   const [progetti, setProgetti] = useState([]);
   const [saving, setSaving] = useState(false);
   const [errore, setErrore] = useState("");
+  const [filtro, setFiltro] = useState("DA_GESTIRE");
   const [dataContatto, setDataContatto] = useState(dataOggi);
+  const [prossimoContatto, setProssimoContatto] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -71,8 +73,25 @@ export default function Contatto({ cantina, onSalvato, onAnnulla }) {
           progetto_id: progettoId ? Number(progettoId) : null
         });
 
-      if (error) throw error;
-      onSalvato?.();
+     if (error) throw error;
+
+if (!prodotti && prossimoContatto) {
+  const { error: erroreAttivita } = await crmSupabase
+    .from("crm_attivita")
+    .insert({
+      cantina_id: cantina.id,
+      progetto_id: progettoId ? Number(progettoId) : null,
+      descrizione: interlocutore.trim()
+        ? `Ricontattare ${interlocutore.trim()}`
+        : "Ricontattare la cantina",
+      scadenza: `${prossimoContatto}T12:00:00+02:00`,
+      completata: false
+    });
+
+  if (erroreAttivita) throw erroreAttivita;
+}
+
+onSalvato?.();
     } catch (err) {
       console.error(err);
       setErrore("Salvataggio non riuscito.");
@@ -172,6 +191,24 @@ export default function Contatto({ cantina, onSalvato, onAnnulla }) {
           }}
         />
       </label>
+
+      {!prodotti && (
+  <label style={{ gridColumn: "1 / -1" }}>
+    Prossimo contatto (facoltativo)
+    <input
+      type="date"
+      value={prossimoContatto}
+      onChange={(e) => setProssimoContatto(e.target.value)}
+      style={{
+        display: "block",
+        width: "100%",
+        padding: 8,
+        boxSizing: "border-box",
+        marginTop: 5
+      }}
+    />
+  </label>
+)}
 
       {errore && (
         <p style={{ gridColumn: "1 / -1", color: "red" }}>
