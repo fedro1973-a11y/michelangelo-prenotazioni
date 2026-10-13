@@ -10,18 +10,24 @@ function dataOggi() {
   return `${anno}-${mese}-${giorno}`;
 }
 
-export default function Contatto({ cantina, onSalvato, onAnnulla }) {
+export default function Contatto({
+  cantina,
+  attivita = null,
+  onSalvato,
+  onAnnulla
+}) {
   const [prodotti, setProdotti] = useState(false);
   const [canale, setCanale] = useState("TELEFONO");
   const [interlocutore, setInterlocutore] = useState("");
   const [sintesi, setSintesi] = useState("");
   const [progettoId, setProgettoId] = useState("");
   const [progetti, setProgetti] = useState([]);
+  const [programmaRichiamo, setProgrammaRichiamo] = useState(false);
+  const [dataRichiamo, setDataRichiamo] = useState("");
+  const [descrizioneRichiamo, setDescrizioneRichiamo] = useState("");
   const [saving, setSaving] = useState(false);
   const [errore, setErrore] = useState("");
-  const [filtro, setFiltro] = useState("DA_GESTIRE");
   const [dataContatto, setDataContatto] = useState(dataOggi);
-  const [prossimoContatto, setProssimoContatto] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -47,58 +53,59 @@ export default function Contatto({ cantina, onSalvato, onAnnulla }) {
   }, []);
 
   async function salva(e) {
-    e.preventDefault();
-    if (saving) return;
+  e.preventDefault();
+  if (saving) return;
 
-    if (!prodotti && !sintesi.trim()) {
-      setErrore("Inserisci la sintesi della conversazione.");
-      return;
-    }
+  if (!prodotti && !sintesi.trim()) {
+    setErrore("Inserisci la sintesi della conversazione.");
+    return;
+  }
 
-    setSaving(true);
-    setErrore("");
+  if (
+    programmaRichiamo &&
+    (!dataRichiamo || !descrizioneRichiamo.trim())
+  ) {
+    setErrore("Inserisci data e descrizione del prossimo richiamo.");
+    return;
+  }
 
-    try {
-      const { error } = await crmSupabase
-        .from("crm_contatti")
-        .insert({
-          cantina_id: cantina.id,
-          data_contatto: new Date(
-  `${dataContatto}T12:00:00`
-).toISOString(),
-          aggiornamento_prodotti: prodotti,
-          canale: prodotti ? "WEB" : canale,
-          interlocutore: interlocutore.trim() || null,
-          sintesi: sintesi.trim() || null,
-          progetto_id: progettoId ? Number(progettoId) : null
-        });
+  setSaving(true);
+  setErrore("");
 
-     if (error) throw error;
+  try {
+    const { error } = await crmSupabase.rpc(
+      "crm_salva_contatto_richiamo",
+      {
+        p_cantina_id: cantina.id,
+        p_data_contatto: new Date(
+          `${dataContatto}T12:00:00`
+        ).toISOString(),
+        p_canale: prodotti ? "WEB" : canale,
+        p_interlocutore: interlocutore.trim() || null,
+        p_sintesi: sintesi.trim() || null,
+        p_aggiornamento_prodotti: prodotti,
+        p_progetto_id: progettoId ? Number(progettoId) : null,
+        p_attivita_id: attivita?.id ?? null,
+        p_nuova_scadenza: programmaRichiamo
+          ? new Date(`${dataRichiamo}T12:00:00`).toISOString()
+          : null,
+        p_nuova_descrizione: programmaRichiamo
+          ? descrizioneRichiamo.trim()
+          : null
+      }
+    );
 
-if (!prodotti && prossimoContatto) {
-  const { error: erroreAttivita } = await crmSupabase
-    .from("crm_attivita")
-    .insert({
-      cantina_id: cantina.id,
-      progetto_id: progettoId ? Number(progettoId) : null,
-      descrizione: interlocutore.trim()
-        ? `Ricontattare ${interlocutore.trim()}`
-        : "Ricontattare la cantina",
-      scadenza: `${prossimoContatto}T12:00:00+02:00`,
-      completata: false
-    });
+    if (error) throw error;
 
-  if (erroreAttivita) throw erroreAttivita;
+    onSalvato?.();
+  } catch (err) {
+    console.error(err);
+    setErrore("Salvataggio non riuscito. Nessuna modifica confermata.");
+  } finally {
+    setSaving(false);
+  }
 }
 
-onSalvato?.();
-    } catch (err) {
-      console.error(err);
-      setErrore("Salvataggio non riuscito.");
-    } finally {
-      setSaving(false);
-    }
-  }
 
   return (
     <form onSubmit={salva} style={{
@@ -192,24 +199,53 @@ onSalvato?.();
         />
       </label>
 
-      {!prodotti && (
-  <label style={{ gridColumn: "1 / -1" }}>
-    Prossimo contatto (facoltativo)
+<div style={{ gridColumn: "1 / -1" }}>
+  <label>
     <input
-      type="date"
-      value={prossimoContatto}
-      onChange={(e) => setProssimoContatto(e.target.value)}
-      style={{
-        display: "block",
-        width: "100%",
-        padding: 8,
-        boxSizing: "border-box",
-        marginTop: 5
-      }}
+      type="checkbox"
+      checked={programmaRichiamo}
+      onChange={(e) => setProgrammaRichiamo(e.target.checked)}
     />
+    {" "}PROGRAMMA PROSSIMO RICHIAMO
   </label>
-)}
+</div>
 
+{programmaRichiamo && (
+  <>
+    <label style={{ gridColumn: "1 / -1" }}>
+      Data prossimo richiamo
+      <input
+        type="date"
+        value={dataRichiamo}
+        onChange={(e) => setDataRichiamo(e.target.value)}
+        required
+        style={{
+          display: "block",
+          width: "100%",
+          padding: 8,
+          boxSizing: "border-box",
+          marginTop: 5
+        }}
+      />
+    </label>
+    <label style={{ gridColumn: "1 / -1" }}>
+      Attività da svolgere
+      <textarea
+        value={descrizioneRichiamo}
+        onChange={(e) => setDescrizioneRichiamo(e.target.value)}
+        required
+        rows={2}
+        placeholder="Es. Richiamare per verificare interesse"
+        style={{
+          display: "block",
+          width: "100%",
+          boxSizing: "border-box",
+          marginTop: 5
+        }}
+      />
+    </label>
+  </>
+)}
       {errore && (
         <p style={{ gridColumn: "1 / -1", color: "red" }}>
           {errore}
