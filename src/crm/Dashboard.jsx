@@ -5,12 +5,11 @@ import SchedaCantina from "./SchedaCantina";
 export default function Dashboard() {
   const [attivita, setAttivita] = useState([]);
   const [cantineSilenti, setCantineSilenti] = useState([]);
-  const [mostraSilenti, setMostraSilenti] = useState(false);
   const [cantinaSilenteAperta, setCantinaSilenteAperta] = useState(null);
   const [attivitaAperta, setAttivitaAperta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState("");
-  const [filtro, setFiltro] = useState("DA_GESTIRE");
+  const [filtro, setFiltro] = useState("SCADUTE");
 
   useEffect(() => {
   caricaAttivita();
@@ -229,9 +228,9 @@ if (cantinaSilenteAperta !== null) {
   style={{
     ...boxStyle,
     cursor: "pointer",
-    background: mostraSilenti ? "#fff3e8" : "#fff"
+    background: filtro === "SILENTI" ? "#fff3e8" : "#fff"
   }}
-  onClick={() => setMostraSilenti(!mostraSilenti)}
+  onClick={() => setFiltro(filtro === "SILENTI" ? "DA_GESTIRE" : "SILENTI")}
 >
   <div style={{ fontSize: 13 }}>CANTINE SILENTI</div>
   <div style={{
@@ -242,7 +241,7 @@ if (cantinaSilenteAperta !== null) {
     {cantineSilenti.length}
   </div>
   <div style={{ fontSize: 11, marginTop: 5 }}>
-    {mostraSilenti ? "Nascondi elenco" : "Mostra elenco"}
+    {filtro === "SILENTI" ? "Nascondi elenco" : "Mostra elenco"}
   </div>
 </div>
         <div
@@ -288,7 +287,7 @@ if (cantinaSilenteAperta !== null) {
         </div>
       </div>
 
-{mostraSilenti && (
+{filtro === "SILENTI" && (
   <div style={{ marginBottom: 25 }}>
     <h3>Elenco cantine silenti ({cantineSilenti.length})</h3>
 
@@ -337,7 +336,9 @@ if (cantinaSilenteAperta !== null) {
   </div>
 )}
 
-      <h3>AttivitÃ  da gestire</h3>
+{filtro !== "SILENTI" && (
+  <>
+    <h3>Attività da gestire</h3>
 
       {attivitaVisualizzate.length === 0 ? (
         <p>
@@ -404,7 +405,9 @@ if (cantinaSilenteAperta !== null) {
             ))}
           </tbody>
         </table>
-      )}
+            )}
+  </>
+)}
     </div>
   );
 }
