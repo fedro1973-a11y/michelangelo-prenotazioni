@@ -10,13 +10,21 @@ function dataOggi() {
   return `${anno}-${mese}-${giorno}`;
 }
 
-export default function Contatto({ cantina, onSalvato, onAnnulla }) {
+export default function Contatto({
+  cantina,
+  attivita = null,
+  onSalvato,
+  onAnnulla
+}) {
   const [prodotti, setProdotti] = useState(false);
   const [canale, setCanale] = useState("TELEFONO");
   const [interlocutore, setInterlocutore] = useState("");
   const [sintesi, setSintesi] = useState("");
   const [progettoId, setProgettoId] = useState("");
   const [progetti, setProgetti] = useState([]);
+  const [programmaRichiamo, setProgrammaRichiamo] = useState(false);
+  const [dataRichiamo, setDataRichiamo] = useState("");
+  const [descrizioneRichiamo, setDescrizioneRichiamo] = useState("");
   const [saving, setSaving] = useState(false);
   const [errore, setErrore] = useState("");
   const [dataContatto, setDataContatto] = useState(dataOggi);
@@ -45,41 +53,59 @@ export default function Contatto({ cantina, onSalvato, onAnnulla }) {
   }, []);
 
   async function salva(e) {
-    e.preventDefault();
-    if (saving) return;
+  e.preventDefault();
+  if (saving) return;
 
-    if (!prodotti && !sintesi.trim()) {
-      setErrore("Inserisci la sintesi della conversazione.");
-      return;
-    }
-
-    setSaving(true);
-    setErrore("");
-
-    try {
-      const { error } = await crmSupabase
-        .from("crm_contatti")
-        .insert({
-          cantina_id: cantina.id,
-          data_contatto: new Date(
-  `${dataContatto}T12:00:00`
-).toISOString(),
-          aggiornamento_prodotti: prodotti,
-          canale: prodotti ? "WEB" : canale,
-          interlocutore: interlocutore.trim() || null,
-          sintesi: sintesi.trim() || null,
-          progetto_id: progettoId ? Number(progettoId) : null
-        });
-
-      if (error) throw error;
-      onSalvato?.();
-    } catch (err) {
-      console.error(err);
-      setErrore("Salvataggio non riuscito.");
-    } finally {
-      setSaving(false);
-    }
+  if (!prodotti && !sintesi.trim()) {
+    setErrore("Inserisci la sintesi della conversazione.");
+    return;
   }
+
+  if (
+    programmaRichiamo &&
+    (!dataRichiamo || !descrizioneRichiamo.trim())
+  ) {
+    setErrore("Inserisci data e descrizione del prossimo richiamo.");
+    return;
+  }
+
+  setSaving(true);
+  setErrore("");
+
+  try {
+    const { error } = await crmSupabase.rpc(
+      "crm_salva_contatto_richiamo",
+      {
+        p_cantina_id: cantina.id,
+        p_data_contatto: new Date(
+          `${dataContatto}T12:00:00`
+        ).toISOString(),
+        p_canale: prodotti ? "WEB" : canale,
+        p_interlocutore: interlocutore.trim() || null,
+        p_sintesi: sintesi.trim() || null,
+        p_aggiornamento_prodotti: prodotti,
+        p_progetto_id: progettoId ? Number(progettoId) : null,
+        p_attivita_id: attivita?.id ?? null,
+        p_nuova_scadenza: programmaRichiamo
+          ? new Date(`${dataRichiamo}T12:00:00`).toISOString()
+          : null,
+        p_nuova_descrizione: programmaRichiamo
+          ? descrizioneRichiamo.trim()
+          : null
+      }
+    );
+
+    if (error) throw error;
+
+    onSalvato?.();
+  } catch (err) {
+    console.error(err);
+    setErrore("Salvataggio non riuscito. Nessuna modifica confermata.");
+  } finally {
+    setSaving(false);
+  }
+}
+
 
   return (
     <form onSubmit={salva} style={{
@@ -173,6 +199,53 @@ export default function Contatto({ cantina, onSalvato, onAnnulla }) {
         />
       </label>
 
+<div style={{ gridColumn: "1 / -1" }}>
+  <label>
+    <input
+      type="checkbox"
+      checked={programmaRichiamo}
+      onChange={(e) => setProgrammaRichiamo(e.target.checked)}
+    />
+    {" "}PROGRAMMA PROSSIMO RICHIAMO
+  </label>
+</div>
+
+{programmaRichiamo && (
+  <>
+    <label style={{ gridColumn: "1 / -1" }}>
+      Data prossimo richiamo
+      <input
+        type="date"
+        value={dataRichiamo}
+        onChange={(e) => setDataRichiamo(e.target.value)}
+        required
+        style={{
+          display: "block",
+          width: "100%",
+          padding: 8,
+          boxSizing: "border-box",
+          marginTop: 5
+        }}
+      />
+    </label>
+    <label style={{ gridColumn: "1 / -1" }}>
+      Attività da svolgere
+      <textarea
+        value={descrizioneRichiamo}
+        onChange={(e) => setDescrizioneRichiamo(e.target.value)}
+        required
+        rows={2}
+        placeholder="Es. Richiamare per verificare interesse"
+        style={{
+          display: "block",
+          width: "100%",
+          boxSizing: "border-box",
+          marginTop: 5
+        }}
+      />
+    </label>
+  </>
+)}
       {errore && (
         <p style={{ gridColumn: "1 / -1", color: "red" }}>
           {errore}

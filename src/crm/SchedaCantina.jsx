@@ -77,30 +77,11 @@ export default function SchedaCantina({
     setAggiornamento((precedente) => precedente + 1);
   }
 
-  async function completaAttivita() {
+ function completaAttivita() {
   if (!attivita) return;
 
-  const conferma = window.confirm(
-    "Vuoi segnare questa attività come completata?"
-  );
-
-  if (!conferma) return;
-
-  const { error } = await crmSupabase
-    .from("crm_attivita")
-    .update({
-      completata: true,
-      completata_il: new Date().toISOString()
-    })
-    .eq("id", attivita.id);
-
-  if (error) {
-    console.error(error);
-    window.alert("Errore durante il completamento dell'attività.");
-    return;
-  }
-
-  onChiudi();
+  setRiprogramma(false);
+  setVista("contatto");
 }
 
 async function salvaNuovaScadenza() {
@@ -375,10 +356,11 @@ async function salvaNuovaScadenza() {
             />
           ) : (
             <Contatto
-              cantina={cantina}
-              onSalvato={salvato}
-              onAnnulla={() => setVista("")}
-            />
+  cantina={cantina}
+  attivita={attivita}
+  onSalvato={attivita ? onChiudi : salvato}
+  onAnnulla={() => setVista("")}
+/>
           )}
         </div>
       )}
