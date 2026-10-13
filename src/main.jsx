@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
-import CRM from "./crm/CRM.jsx";
+import CRM from "./crm/crm.jsx";
 if (window.location.pathname.startsWith("/crm")) {
   import("./crm/crm.css");
 } else {
