@@ -3,6 +3,7 @@ import { crmSupabase } from "./supabase";
 import Cantine from "./Cantine";
 import Segnalatori from "./Segnalatori";
 import Dashboard from "./Dashboard";
+import Progetti from "./Progetti";
 
 export default function CRM() {
   const [session, setSession] = useState(null);
@@ -204,6 +205,13 @@ export default function CRM() {
   </button>
 
   <button
+    onClick={() => setPagina("progetti")}
+    disabled={pagina === "progetti"}
+  >
+    PROGETTI
+  </button>
+
+  <button
     onClick={() => setPagina("segnalatori")}
     disabled={pagina === "segnalatori"}
   >
@@ -213,6 +221,7 @@ export default function CRM() {
 
 {pagina === "dashboard" && <Dashboard key={dashboardKey} />}
 {pagina === "cantine" && <Cantine />}
+{pagina === "progetti" && <Progetti />}
 {pagina === "segnalatori" && <Segnalatori />}
   </div>
 );

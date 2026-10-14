@@ -1,17 +1,19 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
-import CRM from "./crm/crm.jsx";
-if (window.location.pathname.startsWith("/crm")) {
+const isCRM = window.location.pathname.startsWith("/crm");
+
+if (isCRM) {
   import("./crm/crm.css");
 } else {
   import("./index.css");
 }
 
-const isCRM = window.location.pathname.startsWith("/crm");
+const app = isCRM ? import("./crm/crm.jsx") : import("./App.jsx");
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    {isCRM ? <CRM /> : <App />}
-  </React.StrictMode>
-);
+app.then(({ default: App }) => {
+  ReactDOM.createRoot(document.getElementById("root")).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+});

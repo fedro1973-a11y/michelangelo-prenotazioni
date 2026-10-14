@@ -1,6 +1,15 @@
 
 import { useEffect, useState } from "react";
 import { crmSupabase } from "./supabase";
+
+const STATI_PRESENTAZIONE = [
+  "DA PRESENTARE",
+  "IN CORSO DI PRESENTAZIONE",
+  "PRESENTATO"
+];
+
+const STATI_ADESIONE = ["DA DEFINIRE", "ADERITO", "NON ADERITO"];
+
 function dataOggi() {
   const oggi = new Date();
   const anno = oggi.getFullYear();
@@ -22,6 +31,8 @@ export default function Contatto({
   const [sintesi, setSintesi] = useState("");
   const [progettoId, setProgettoId] = useState("");
   const [progetti, setProgetti] = useState([]);
+  const [statoPresentazione, setStatoPresentazione] = useState("");
+  const [statoAdesione, setStatoAdesione] = useState("");
   const [programmaRichiamo, setProgrammaRichiamo] = useState(false);
   const [dataRichiamo, setDataRichiamo] = useState("");
   const [descrizioneRichiamo, setDescrizioneRichiamo] = useState("");
@@ -33,24 +44,54 @@ export default function Contatto({
     let active = true;
 
     async function caricaProgetti() {
-      const { data, error } = await crmSupabase
-        .from("crm_progetti")
-        .select("id, nome")
-        .eq("attivo", true)
-        .order("nome");
+      const [risultatoProgetti, risultatoAssegnazioni] = await Promise.all([
+        crmSupabase
+          .from("crm_progetti")
+          .select("id, nome, monitora_adesioni")
+          .eq("attivo", true)
+          .order("nome"),
+        crmSupabase
+          .from("crm_cantina_progetti")
+          .select("id, progetto_id, stato_presentazione, stato_adesione")
+          .eq("cantina_id", cantina.id)
+      ]);
 
       if (!active) return;
 
-      if (error) {
+      if (risultatoProgetti.error || risultatoAssegnazioni.error) {
         setErrore("Impossibile caricare i progetti.");
       } else {
-        setProgetti(data ?? []);
+        const assegnazioni = new Map(
+          (risultatoAssegnazioni.data ?? []).map((assegnazione) => [
+            String(assegnazione.progetto_id),
+            assegnazione
+          ])
+        );
+        setProgetti(
+          (risultatoProgetti.data ?? []).map((progetto) => ({
+            ...progetto,
+            assegnazione: assegnazioni.get(String(progetto.id)) ?? null
+          }))
+        );
       }
     }
 
     caricaProgetti();
     return () => { active = false; };
-  }, []);
+  }, [cantina.id]);
+
+  const progettoSelezionato = progetti.find(
+    (progetto) => String(progetto.id) === progettoId
+  );
+
+  function selezionaProgetto(valore) {
+    setProgettoId(valore);
+    const progetto = progetti.find(
+      (voce) => String(voce.id) === valore
+    );
+    setStatoPresentazione(progetto?.assegnazione?.stato_presentazione ?? "");
+    setStatoAdesione(progetto?.assegnazione?.stato_adesione ?? "");
+  }
 
   async function salva(e) {
   e.preventDefault();
@@ -73,8 +114,9 @@ export default function Contatto({
   setErrore("");
 
   try {
+    const assegnazione = progettoSelezionato?.assegnazione;
     const { error } = await crmSupabase.rpc(
-      "crm_salva_contatto_richiamo",
+      "crm_salva_contatto_con_stati",
       {
         p_cantina_id: cantina.id,
         p_data_contatto: new Date(
@@ -91,7 +133,18 @@ export default function Contatto({
           : null,
         p_nuova_descrizione: programmaRichiamo
           ? descrizioneRichiamo.trim()
-          : null
+          : null,
+        p_stato_presentazione:
+          assegnazione &&
+          statoPresentazione !== assegnazione.stato_presentazione
+            ? statoPresentazione
+            : null,
+        p_stato_adesione:
+          assegnazione &&
+          progettoSelezionato.monitora_adesioni &&
+          statoAdesione !== assegnazione.stato_adesione
+            ? statoAdesione
+            : null
       }
     );
 
@@ -169,20 +222,75 @@ export default function Contatto({
             />
           </label>
 
+        </>
+      )}
+
+      <label style={{ gridColumn: "1 / -1" }}>
+        Progetto associato
+        <select
+          value={progettoId}
+          onChange={(e) => selezionaProgetto(e.target.value)}
+          style={{ display: "block", width: "100%", padding: 8 }}
+        >
+          <option value="">Nessun progetto</option>
+          {progetti.map((progetto) => (
+            <option key={progetto.id} value={progetto.id}>
+              {progetto.nome}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {progettoSelezionato?.assegnazione && (
+        <fieldset
+          style={{
+            gridColumn: "1 / -1",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+            border: "1px solid #cbd5e1",
+            padding: 12
+          }}
+        >
+          <legend>Aggiornamento progetto in questo contatto</legend>
           <label>
-            Progetto
+            Stato presentazione
             <select
-              value={progettoId}
-              onChange={(e) => setProgettoId(e.target.value)}
+              value={statoPresentazione}
+              onChange={(e) => setStatoPresentazione(e.target.value)}
               style={{ display: "block", width: "100%", padding: 8 }}
             >
-              <option value="">Nessun progetto</option>
-              {progetti.map((p) => (
-                <option key={p.id} value={p.id}>{p.nome}</option>
-              ))}
+              {STATI_PRESENTAZIONE
+                .filter(
+                  (stato) =>
+                    progettoSelezionato.assegnazione.stato_presentazione !==
+                      "PRESENTATO" || stato === "PRESENTATO"
+                )
+                .map((stato) => (
+                  <option key={stato} value={stato}>
+                    {stato}
+                  </option>
+                ))}
             </select>
           </label>
-        </>
+          {progettoSelezionato.monitora_adesioni && (
+            <label>
+              Stato adesione
+              <select
+                value={statoAdesione}
+                onChange={(e) => setStatoAdesione(e.target.value)}
+                disabled={statoPresentazione !== "PRESENTATO"}
+                style={{ display: "block", width: "100%", padding: 8 }}
+              >
+                {STATI_ADESIONE.map((stato) => (
+                  <option key={stato} value={stato}>
+                    {stato}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </fieldset>
       )}
 
       <label style={{ gridColumn: "1 / -1" }}>

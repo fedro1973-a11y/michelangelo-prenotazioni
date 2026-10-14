@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { crmSupabase } from "./supabase";
 import NuovaCantina from "./NuovaCantina";
 import Contatto from "./Contatto";
@@ -28,6 +28,10 @@ export default function SchedaCantina({
   const [aggiornamento, setAggiornamento] = useState(0);
   const [riprogramma, setRiprogramma] = useState(false);
   const [nuovaScadenza, setNuovaScadenza] = useState("");
+  const [contattoDettaglio, setContattoDettaglio] = useState(null);
+  const [dettaglioStorico, setDettaglioStorico] = useState(null);
+  const [caricamentoDettaglio, setCaricamentoDettaglio] = useState(false);
+  const richiestaDettaglio = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -75,6 +79,67 @@ export default function SchedaCantina({
   function salvato() {
     setVista("");
     setAggiornamento((precedente) => precedente + 1);
+  }
+
+  async function apriDettaglioContatto(contatto) {
+    const richiesta = ++richiestaDettaglio.current;
+    setContattoDettaglio(contatto);
+    setDettaglioStorico(null);
+    setCaricamentoDettaglio(true);
+    setVista("dettaglio");
+
+    const richieste = [
+      crmSupabase
+        .from("crm_progetti_eventi")
+        .select("tipo_evento, valore_nuovo, changed_at")
+        .eq("contatto_id", contatto.id)
+        .in("tipo_evento", ["PRESENTAZIONE", "ADESIONE"])
+        .order("changed_at", { ascending: true }),
+      contatto.progetto_id
+        ? crmSupabase
+            .from("crm_progetti")
+            .select("id, nome")
+            .eq("id", contatto.progetto_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null })
+    ];
+
+    const [risultatoEventi, risultatoProgetto] = await Promise.all(richieste);
+    if (richiesta !== richiestaDettaglio.current) return;
+
+    if (risultatoEventi.error) {
+      console.error("Errore caricamento stati storici contatto:", risultatoEventi.error);
+    }
+    if (risultatoProgetto.error) {
+      console.error("Errore caricamento progetto contatto:", risultatoProgetto.error);
+    }
+
+    const stati = {
+      presentazione: null,
+      adesione: null
+    };
+
+    for (const evento of risultatoEventi.data ?? []) {
+      if (evento.tipo_evento === "PRESENTAZIONE") {
+        stati.presentazione = evento.valore_nuovo;
+      } else if (evento.tipo_evento === "ADESIONE") {
+        stati.adesione = evento.valore_nuovo;
+      }
+    }
+
+    setDettaglioStorico({
+      progetto: risultatoProgetto.data,
+      ...stati
+    });
+    setCaricamentoDettaglio(false);
+  }
+
+  function chiudiDettaglioContatto() {
+    richiestaDettaglio.current += 1;
+    setVista("");
+    setContattoDettaglio(null);
+    setDettaglioStorico(null);
+    setCaricamentoDettaglio(false);
   }
 
  function completaAttivita() {
@@ -257,27 +322,29 @@ async function salvaNuovaScadenza() {
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: 6 }}>
-          <button
-            type="button"
-            onClick={() =>
-              setVista(vista === "modifica" ? "" : "modifica")
-            }
-            style={stilePulsante}
-          >
-            MODIFICA
-          </button>
+        {vista !== "dettaglio" && (
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              type="button"
+              onClick={() =>
+                setVista(vista === "modifica" ? "" : "modifica")
+              }
+              style={stilePulsante}
+            >
+              MODIFICA
+            </button>
 
-          <button
-            type="button"
-            onClick={() =>
-              setVista(vista === "contatto" ? "" : "contatto")
-            }
-            style={stilePulsante}
-          >
-            + CONTATTO
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() =>
+                setVista(vista === "contatto" ? "" : "contatto")
+              }
+              style={stilePulsante}
+            >
+              + CONTATTO
+            </button>
+          </div>
+        )}
       </div>
 
       <div
@@ -354,13 +421,98 @@ async function salvaNuovaScadenza() {
               cantina={cantina}
               onSalvata={salvato}
             />
-          ) : (
+          ) : vista === "contatto" ? (
             <Contatto
-  cantina={cantina}
-  attivita={attivita}
-  onSalvato={attivita ? onChiudi : salvato}
-  onAnnulla={() => setVista("")}
-/>
+              cantina={cantina}
+              attivita={attivita}
+              onSalvato={attivita ? onChiudi : salvato}
+              onAnnulla={() => setVista("")}
+            />
+          ) : (
+            <section aria-label="Dettaglio storico contatto">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                  marginBottom: 12
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Dettaglio storico contatto</h3>
+                <button type="button" onClick={chiudiDettaglioContatto}>
+                  CHIUDI
+                </button>
+              </div>
+              {caricamentoDettaglio ? (
+                <p>Caricamento dettaglio...</p>
+              ) : contattoDettaglio ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+                    gap: "10px 16px",
+                    fontSize: 13
+                  }}
+                >
+                  <div>
+                    <strong>Data contatto</strong>
+                    <div>{formattaData(contattoDettaglio.data_contatto)}</div>
+                  </div>
+                  <div>
+                    <strong>Canale</strong>
+                    <div>{contattoDettaglio.canale || "Non registrato"}</div>
+                  </div>
+                  <div>
+                    <strong>Interlocutore</strong>
+                    <div>{contattoDettaglio.interlocutore || "Non registrato"}</div>
+                  </div>
+                  <div>
+                    <strong>Prodotti aggiornati</strong>
+                    <div>
+                      {contattoDettaglio.aggiornamento_prodotti == null
+                        ? "Non registrato"
+                        : contattoDettaglio.aggiornamento_prodotti
+                          ? "Sì"
+                          : "No"}
+                    </div>
+                  </div>
+                  <div>
+                    <strong>Progetto associato</strong>
+                    <div>
+                      {dettaglioStorico?.progetto?.nome ||
+                        (contattoDettaglio.progetto_id
+                          ? `ID ${contattoDettaglio.progetto_id}`
+                          : "Non registrato")}
+                    </div>
+                  </div>
+                  <div>
+                    <strong>Stato presentazione registrato</strong>
+                    <div>{dettaglioStorico?.presentazione || "Non registrato"}</div>
+                  </div>
+                  <div>
+                    <strong>Stato adesione registrato</strong>
+                    <div>{dettaglioStorico?.adesione || "Non registrato"}</div>
+                  </div>
+                  <div>
+                    <strong>Richiamo collegato</strong>
+                    <div>Non registrato</div>
+                  </div>
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      whiteSpace: "pre-wrap",
+                      overflowWrap: "anywhere"
+                    }}
+                  >
+                    <strong>Sintesi completa della conversazione</strong>
+                    <div>{contattoDettaglio.sintesi || "Non registrato"}</div>
+                  </div>
+                </div>
+              ) : (
+                <p>Non registrato</p>
+              )}
+            </section>
           )}
         </div>
       )}
@@ -401,6 +553,7 @@ async function salvaNuovaScadenza() {
                 <th style={stileCella}>Canale</th>
                 <th style={stileCella}>Interlocutore</th>
                 <th style={stileCella}>Note</th>
+                <th style={stileCella}>Dettaglio</th>
               </tr>
             </thead>
 
@@ -432,6 +585,15 @@ async function salvaNuovaScadenza() {
 
                   <td style={stileCella}>
                     {contatto.sintesi || "—"}
+                  </td>
+
+                  <td style={stileCella}>
+                    <button
+                      type="button"
+                      onClick={() => apriDettaglioContatto(contatto)}
+                    >
+                      DETTAGLIO
+                    </button>
                   </td>
                 </tr>
               ))}
