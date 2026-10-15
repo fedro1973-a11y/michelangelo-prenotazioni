@@ -4,6 +4,7 @@ import Cantine from "./Cantine";
 import Segnalatori from "./Segnalatori";
 import Dashboard from "./Dashboard";
 import Progetti from "./Progetti";
+import "./crm.css";
 
 export default function CRM() {
   const [session, setSession] = useState(null);
