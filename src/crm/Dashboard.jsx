@@ -37,7 +37,7 @@ export default function Dashboard() {
 
     if (error) {
       console.error(error);
-      setErrore("Errore nel caricamento delle attivitÃ .");
+      setErrore("Errore nel caricamento delle attività.");
       setAttivita([]);
     } else {
       setAttivita(data || []);
@@ -162,14 +162,7 @@ while (true) {
       : filtro === "PROSSIME"
         ? prossime
         : daGestire;
-        const boxStyle = {
-    flex: 1,
-    minWidth: 180,
-    border: "1px solid #ddd",
-    borderRadius: 10,
-    padding: 18,
-    background: "#fff"
-  };
+
 if (cantinaSilenteAperta !== null) {
   return (
     <SchedaCantina
@@ -197,217 +190,200 @@ if (cantinaSilenteAperta !== null) {
 }
 
   if (loading) {
-    return <p>Caricamento attivitÃ ...</p>;
+    return <p className="crm-dashboard__loading" role="status">Caricamento attività...</p>;
   }
 
   return (
-    <div>
-      <h3
-  onClick={() => setFiltro("DA_GESTIRE")}
-  style={{ cursor: "pointer" }}
-  title="Mostra tutte le attività da gestire"
->
-  Dashboard
-</h3>
+    <main className="crm-dashboard">
+      <div className="crm-dashboard__page-heading">
+        <h2
+          onClick={() => setFiltro("DA_GESTIRE")}
+          title="Mostra tutte le attività da gestire"
+        >
+          Dashboard
+        </h2>
+      </div>
 
       {errore && (
-        <p style={{ color: "red" }}>
+        <p className="crm-dashboard__error" role="alert">
           {errore}
         </p>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          flexWrap: "wrap",
-          marginBottom: 25
-        }}
-      >
-        <div
-  style={{
-    ...boxStyle,
-    cursor: "pointer",
-    background: filtro === "SILENTI" ? "#fff3e8" : "#fff"
-  }}
-  onClick={() => setFiltro(filtro === "SILENTI" ? "DA_GESTIRE" : "SILENTI")}
->
-  <div style={{ fontSize: 13 }}>CANTINE SILENTI</div>
-  <div style={{
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "#b45309"
-  }}>
-    {cantineSilenti.length}
-  </div>
-  <div style={{ fontSize: 11, marginTop: 5 }}>
-    {filtro === "SILENTI" ? "Nascondi elenco" : "Mostra elenco"}
-  </div>
-</div>
-        <div
-  style={{
-    ...boxStyle,
-    cursor: "pointer",
-    background: filtro === "SCADUTE" ? "#fff3e8" : "#fff"
-  }}
-  onClick={() => setFiltro("SCADUTE")}
->
-          <div style={{ fontSize: 13 }}>SCADUTE</div>
-          <div style={{ fontSize: 30, fontWeight: "bold" }}>
-            {scadute.length}
-          </div>
-        </div>
+      <div className="crm-dashboard__metrics" role="group" aria-label="Riepilogo e filtri Dashboard">
+        <button
+          type="button"
+          className="crm-dashboard__metric crm-dashboard__metric--silent"
+          aria-pressed={filtro === "SILENTI"}
+          onClick={() => setFiltro(filtro === "SILENTI" ? "DA_GESTIRE" : "SILENTI")}
+        >
+          <span className="crm-dashboard__metric-label">CANTINE SILENTI</span>
+          <strong className="crm-dashboard__metric-value">{cantineSilenti.length}</strong>
+          <span className="crm-dashboard__metric-description">
+            {filtro === "SILENTI" ? "Nascondi elenco" : "Mostra elenco"}
+          </span>
+        </button>
 
-        <div
-  style={{
-    ...boxStyle,
-    cursor: "pointer",
-    background: filtro === "OGGI" ? "#fff3e8" : "#fff"
-  }}
-  onClick={() => setFiltro("OGGI")}
->
-          <div style={{ fontSize: 13 }}>DA FARE OGGI</div>
-          <div style={{ fontSize: 30, fontWeight: "bold" }}>
-            {oggiDaFare.length}
-          </div>
-        </div>
+        <button
+          type="button"
+          className="crm-dashboard__metric crm-dashboard__metric--overdue"
+          aria-pressed={filtro === "SCADUTE"}
+          onClick={() => setFiltro("SCADUTE")}
+        >
+          <span className="crm-dashboard__metric-label">SCADUTE</span>
+          <strong className="crm-dashboard__metric-value">{scadute.length}</strong>
+          <span className="crm-dashboard__metric-description">Attività oltre la scadenza</span>
+        </button>
 
-        <div
-  style={{
-    ...boxStyle,
-    cursor: "pointer",
-    background: filtro === "PROSSIME" ? "#fff3e8" : "#fff"
-  }}
-  onClick={() => setFiltro("PROSSIME")}
->
-          <div style={{ fontSize: 13 }}>PROSSIME</div>
-          <div style={{ fontSize: 30, fontWeight: "bold" }}>
-            {prossime.length}
-          </div>
-        </div>
+        <button
+          type="button"
+          className="crm-dashboard__metric crm-dashboard__metric--today"
+          aria-pressed={filtro === "OGGI"}
+          onClick={() => setFiltro("OGGI")}
+        >
+          <span className="crm-dashboard__metric-label">DA FARE OGGI</span>
+          <strong className="crm-dashboard__metric-value">{oggiDaFare.length}</strong>
+          <span className="crm-dashboard__metric-description">Con scadenza oggi</span>
+        </button>
+
+        <button
+          type="button"
+          className="crm-dashboard__metric crm-dashboard__metric--upcoming"
+          aria-pressed={filtro === "PROSSIME"}
+          onClick={() => setFiltro("PROSSIME")}
+        >
+          <span className="crm-dashboard__metric-label">PROSSIME</span>
+          <strong className="crm-dashboard__metric-value">{prossime.length}</strong>
+          <span className="crm-dashboard__metric-description">Con scadenza futura</span>
+        </button>
       </div>
 
-{filtro === "SILENTI" && (
-  <div style={{ marginBottom: 25 }}>
-    <h3>Elenco cantine silenti ({cantineSilenti.length})</h3>
+      {filtro === "SILENTI" && (
+        <section className="crm-dashboard__section">
+          <div className="crm-dashboard__section-heading">
+            <h3>Elenco cantine silenti</h3>
+            <span className="crm-dashboard__section-count">
+              {cantineSilenti.length} cantine
+            </span>
+          </div>
 
-    {cantineSilenti.length === 0 ? (
-      <p>Nessuna cantina silente.</p>
-    ) : (
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", padding: 8 }}>CANTINA</th>
-            <th style={{ textAlign: "left", padding: 8 }}>
-              ULTIMO CONTATTO
-            </th>
-            <th style={{ textAlign: "center", padding: 8 }}>
-              SCHEDA
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {cantineSilenti.map((cantina) => (
-            <tr
-              key={cantina.id}
-              style={{ borderTop: "1px solid #ddd" }}
-            >
-              <td style={{ padding: 8, fontWeight: "bold" }}>
-                {cantina.nome_portale}
-              </td>
-              <td style={{ padding: 8 }}>
-                {cantina.ultimo_contatto
-                  ? dataLocale(cantina.ultimo_contatto)
-                  : "Mai contattata"}
-              </td>
-              <td style={{ padding: 8, textAlign: "center" }}>
-                <button
-                  type="button"
-                  onClick={() => setCantinaSilenteAperta(cantina.id)}
-                >
-                  SCHEDA
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-  </div>
-)}
+          {cantineSilenti.length === 0 ? (
+            <p className="crm-dashboard__empty" role="status">
+              Nessuna cantina silente.
+            </p>
+          ) : (
+            <div className="crm-data-table-wrap">
+              <table className="crm-data-table crm-dashboard__table crm-dashboard__table--silent">
+                <thead>
+                  <tr>
+                    <th scope="col">CANTINA</th>
+                    <th scope="col">ULTIMO CONTATTO</th>
+                    <th scope="col">AZIONE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cantineSilenti.map((cantina) => (
+                    <tr key={cantina.id}>
+                      <td>{cantina.nome_portale}</td>
+                      <td>
+                        {cantina.ultimo_contatto ? (
+                          dataLocale(cantina.ultimo_contatto)
+                        ) : (
+                          <span className="crm-status crm-status--silent">
+                            Mai contattata
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => setCantinaSilenteAperta(cantina.id)}
+                        >
+                          SCHEDA
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
 
-{filtro !== "SILENTI" && (
-  <>
-    <h3>Attività da gestire</h3>
+      {filtro !== "SILENTI" && (
+        <section className="crm-dashboard__section">
+          <div className="crm-dashboard__section-heading">
+            <h3>Attività da gestire</h3>
+            <span className="crm-dashboard__section-count">
+              {attivitaVisualizzate.length} attività
+            </span>
+          </div>
 
-      {attivitaVisualizzate.length === 0 ? (
-        <p>
-  {filtro === "SCADUTE"
-    ? "Nessuna attività scaduta."
-    : filtro === "OGGI"
-      ? "Nessuna attività da fare oggi."
-      : filtro === "PROSSIME"
-        ? "Nessuna attività prossima."
-        : "Nessuna attività scaduta o prevista per oggi."}
-</p>
-      ) : (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse"
-          }}
-        >
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: 8 }}>
-                DATA
-              </th>
-              <th style={{ textAlign: "center", padding: 8 }}>
-                SCHEDA
-              </th>
-              <th style={{ textAlign: "left", padding: 8 }}>
-                CANTINA
-              </th>
-              <th style={{ textAlign: "left", padding: 8 }}>
-                ATTIVITÃ€
-              </th>
-            </tr>
-          </thead>
+          {attivitaVisualizzate.length === 0 ? (
+            <p className="crm-dashboard__empty" role="status">
+              {filtro === "SCADUTE"
+                ? "Nessuna attività scaduta."
+                : filtro === "OGGI"
+                  ? "Nessuna attività da fare oggi."
+                  : filtro === "PROSSIME"
+                    ? "Nessuna attività prossima."
+                    : "Nessuna attività scaduta o prevista per oggi."}
+            </p>
+          ) : (
+            <div className="crm-data-table-wrap">
+              <table className="crm-data-table crm-dashboard__table crm-dashboard__table--activities">
+                <thead>
+                  <tr>
+                    <th scope="col">SCADENZA</th>
+                    <th scope="col">CANTINA</th>
+                    <th scope="col">ATTIVITÀ</th>
+                    <th scope="col">AZIONE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attivitaVisualizzate.map((a) => {
+                    const dataScadenza = soloDataLocale(a.scadenza);
+                    const statoScadenza =
+                      dataScadenza < oggi
+                        ? "overdue"
+                        : dataScadenza === oggi
+                          ? "today"
+                          : "upcoming";
+                    const etichettaScadenza =
+                      statoScadenza === "overdue"
+                        ? "SCADUTA"
+                        : statoScadenza === "today"
+                          ? "OGGI"
+                          : "FUTURA";
 
-          <tbody>
-            {attivitaVisualizzate.map(a => (
-              <tr
-                key={a.id}
-                style={{
-                  borderTop: "1px solid #ddd"
-                }}
-              >
-                <td style={{ padding: 8 }}>
-                  {dataLocale(a.scadenza)}
-                </td>
-
-                <td style={{ padding: 8, textAlign: "center" }}>
-  <button
-  onClick={() => setAttivitaAperta(a)}
->
-  SCHEDA
-</button>
-</td>
-
-                <td style={{ padding: 8, fontWeight: "bold" }}>
-                  {a.crm_cantine?.nome_portale || "â€”"}
-                </td>
-
-                <td style={{ padding: 8 }}>
-                  {a.descrizione}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-            )}
-  </>
-)}
-    </div>
+                    return (
+                      <tr key={a.id}>
+                        <td>
+                          {dataLocale(a.scadenza)}{" "}
+                          <span className={`crm-status crm-status--${statoScadenza}`}>
+                            {etichettaScadenza}
+                          </span>
+                        </td>
+                        <td>{a.crm_cantine?.nome_portale || "—"}</td>
+                        <td>{a.descrizione}</td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => setAttivitaAperta(a)}
+                          >
+                            SCHEDA
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+    </main>
   );
 }

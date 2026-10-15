@@ -105,6 +105,22 @@ function statoProgetto(progetto) {
   return progetto.attivo ? "ATTIVO" : "INATTIVO";
 }
 
+function classeStatoProgetto(progetto) {
+  return statoProgetto(progetto) === "ATTIVO" ? "active" : "closed";
+}
+
+function classeStatoPresentazione(stato) {
+  if (stato === "PRESENTATO") return "active";
+  if (stato === "IN CORSO DI PRESENTAZIONE") return "progress";
+  return "new";
+}
+
+function classeStatoAdesione(stato) {
+  if (stato === "ADERITO") return "active";
+  if (stato === "NON ADERITO") return "not-interested";
+  return "closed";
+}
+
 async function caricaElencoProgetti() {
   const [risultatoProgetti, assegnazioni] = await Promise.all([
     crmSupabase
@@ -210,14 +226,6 @@ export default function Progetti() {
     };
   }, [progettoSelezionatoId]);
 
-  const stileCella = {
-    padding: "7px 9px",
-    fontSize: 12,
-    textAlign: "left",
-    borderBottom: "1px solid #e2e8f0",
-    verticalAlign: "top"
-  };
-
   async function salvaNuovoProgetto(event) {
     event.preventDefault();
     if (invioInCorsoRef.current) return;
@@ -274,18 +282,15 @@ export default function Progetti() {
     }
   }
 
-  if (loading) return <p>Caricamento progetti...</p>;
+  if (loading) {
+    return <p className="crm-projects__loading" role="status">Caricamento progetti...</p>;
+  }
 
   if (errore) {
-    return <p style={{ color: "red" }}>{errore}</p>;
+    return <p className="crm-projects__error" role="alert">{errore}</p>;
   }
 
   if (progettoSelezionato) {
-    const stilePulsante = {
-      padding: "5px 10px",
-      fontSize: 12,
-      marginBottom: 12
-    };
     const gruppi = STATI_PRESENTAZIONE.map((stato) => ({
       stato,
       assegnazioni: assegnazioniDettaglio.filter(
@@ -294,95 +299,96 @@ export default function Progetti() {
     }));
 
     return (
-      <section style={{ marginTop: 12 }}>
+      <section className="crm-projects">
         <button
           type="button"
           onClick={() => setProgettoSelezionatoId(null)}
-          style={stilePulsante}
+          className="crm-projects__back"
         >
-          ← INDIETRO AI PROGETTI
+          ← Tutti i progetti
         </button>
 
-        <h2 style={{ margin: "0 0 8px" }}>
-          {progettoSelezionato.nome || "Progetto senza nome"}
-        </h2>
+        <div className="crm-projects__detail-header">
+          <h2>{progettoSelezionato.nome || "Progetto senza nome"}</h2>
+          <span className={`crm-status crm-status--${classeStatoProgetto(progettoSelezionato)}`}>
+            {statoProgetto(progettoSelezionato)}
+          </span>
+        </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "6px 16px",
-            padding: 10,
-            border: "1px solid #ddd",
-            borderRadius: 6,
-            fontSize: 12,
-            marginBottom: 16,
-            background: "#fff"
-          }}
-        >
-          <div>
-            <strong>Stato:</strong> {statoProgetto(progettoSelezionato)}
+        <div className="crm-projects__summary">
+          <div className="crm-projects__summary-item">
+            <span className="crm-projects__summary-label">Cantine assegnate</span>
+            <strong>{assegnazioniDettaglio.length}</strong>
           </div>
-          <div>
-            <strong>Cantine assegnate:</strong> {assegnazioniDettaglio.length}
+          <div className="crm-projects__summary-item">
+            <span className="crm-projects__summary-label">Monitora adesioni</span>
+            <strong>{progettoSelezionato.monitora_adesioni ? "Sì" : "No"}</strong>
           </div>
-          <div style={{ gridColumn: "1 / -1" }}>
-            <strong>Descrizione:</strong> {progettoSelezionato.descrizione || "—"}
+          <div className="crm-projects__summary-item crm-projects__summary-item--description">
+            <span className="crm-projects__summary-label">Descrizione</span>
+            <p>{progettoSelezionato.descrizione || "—"}</p>
           </div>
         </div>
 
         {loadingDettaglio ? (
-          <p>Caricamento cantine assegnate...</p>
+          <p className="crm-projects__loading" role="status">Caricamento cantine assegnate...</p>
         ) : erroreDettaglio ? (
-          <p style={{ color: "red" }}>{erroreDettaglio}</p>
+          <p className="crm-projects__error" role="alert">{erroreDettaglio}</p>
         ) : (
           <>
             {assegnazioniDettaglio.length === 0 && (
-              <p>Nessuna cantina assegnata a questo progetto.</p>
+              <p className="crm-projects__empty">Nessuna cantina assegnata a questo progetto.</p>
             )}
 
             {gruppi.map((gruppo) => (
-              <section key={gruppo.stato} style={{ marginBottom: 18 }}>
-                <h3 style={{ margin: "0 0 8px", fontSize: 15 }}>
-                  {gruppo.stato} ({gruppo.assegnazioni.length})
-                </h3>
+              <section key={gruppo.stato} className="crm-projects__group">
+                <div className="crm-projects__group-heading">
+                  <h3>
+                    <span className={`crm-status crm-status--${classeStatoPresentazione(gruppo.stato)}`}>
+                      {gruppo.stato}
+                    </span>
+                  </h3>
+                  <span className="crm-projects__group-count">
+                    {gruppo.assegnazioni.length} cantine
+                  </span>
+                </div>
 
                 {gruppo.assegnazioni.length === 0 ? (
                   assegnazioniDettaglio.length > 0 && (
-                    <p style={{ fontSize: 12 }}>
+                    <p className="crm-projects__empty crm-projects__empty--group">
                       Nessuna cantina in questo stato.
                     </p>
                   )
                 ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table
-                      style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        background: "#fff"
-                      }}
-                    >
+                  <div className="crm-data-table-wrap">
+                    <table className="crm-data-table crm-projects__table">
                       <thead>
                         <tr>
-                          <th style={stileCella}>Ragione sociale</th>
-                          <th style={stileCella}>Stato presentazione</th>
+                          <th scope="col">Ragione sociale</th>
+                          <th scope="col">Stato presentazione</th>
                           {progettoSelezionato.monitora_adesioni && (
-                            <th style={stileCella}>Stato adesione</th>
+                            <th scope="col">Stato adesione</th>
                           )}
                         </tr>
                       </thead>
                       <tbody>
                         {gruppo.assegnazioni.map((assegnazione) => (
                           <tr key={assegnazione.id}>
-                            <td style={stileCella}>
+                            <td>
                               {assegnazione.ragioneSociale}
                             </td>
-                            <td style={stileCella}>
-                              {assegnazione.stato_presentazione}
+                            <td>
+                              <span className={`crm-status crm-status--${classeStatoPresentazione(assegnazione.stato_presentazione)}`}>
+                                {assegnazione.stato_presentazione}
+                              </span>
                             </td>
                             {progettoSelezionato.monitora_adesioni && (
-                              <td style={stileCella}>
-                                {assegnazione.stato_adesione || "—"}
+                              <td>
+                                {assegnazione.stato_adesione ? (
+                                  <span className={`crm-status crm-status--${classeStatoAdesione(assegnazione.stato_adesione)}`}>
+                                    {assegnazione.stato_adesione}
+                                  </span>
+                                ) : "—"}
                               </td>
                             )}
                           </tr>
@@ -400,19 +406,15 @@ export default function Progetti() {
   }
 
   return (
-    <section style={{ marginTop: 12 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 12
-        }}
-      >
-        <h2 style={{ margin: 0 }}>Progetti</h2>
+    <section className="crm-projects">
+      <div className="crm-projects__header">
+        <div className="crm-projects__page-title">
+          <h2>Progetti</h2>
+          <span>{progetti.length} progetti</span>
+        </div>
         <button
           type="button"
+          className="crm-button--primary"
           onClick={() => {
             setErroreCreazione("");
             setMessaggioSuccesso("");
@@ -424,12 +426,12 @@ export default function Progetti() {
       </div>
 
       {messaggioSuccesso && (
-        <p role="status" style={{ color: "#166534" }}>
+        <p role="status" className="crm-projects__notice crm-projects__notice--success">
           {messaggioSuccesso}
         </p>
       )}
       {erroreCreazione && (
-        <p role="alert" style={{ color: "red", whiteSpace: "pre-wrap" }}>
+        <p role="alert" className="crm-projects__notice crm-projects__notice--error">
           {erroreCreazione}
         </p>
       )}
@@ -437,18 +439,9 @@ export default function Progetti() {
       {moduloNuovoAperto && (
         <form
           onSubmit={salvaNuovoProgetto}
-          style={{
-            display: "grid",
-            gap: 10,
-            maxWidth: 560,
-            marginBottom: 16,
-            padding: 12,
-            border: "1px solid #ddd",
-            borderRadius: 6,
-            background: "#fff"
-          }}
+          className="crm-projects__form"
         >
-          <label style={{ display: "grid", gap: 4 }}>
+          <label className="crm-projects__field">
             Nome <span aria-hidden="true">*</span>
             <input
               autoFocus
@@ -461,7 +454,7 @@ export default function Progetti() {
               maxLength={200}
             />
           </label>
-          <label style={{ display: "grid", gap: 4 }}>
+          <label className="crm-projects__field">
             Descrizione
             <textarea
               value={descrizioneNuovoProgetto}
@@ -471,9 +464,9 @@ export default function Progetti() {
               rows={3}
             />
           </label>
-          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+          <fieldset className="crm-projects__monitoring">
             <legend>Monitoraggio adesioni</legend>
-            <label style={{ marginRight: 16 }}>
+            <label>
               <input
                 type="radio"
                 name="monitora-adesioni"
@@ -492,7 +485,7 @@ export default function Progetti() {
               Sì
             </label>
           </fieldset>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="crm-projects__form-actions">
             <button type="submit" disabled={salvataggioInCorso}>
               {salvataggioInCorso ? "SALVATAGGIO..." : "CREA PROGETTO"}
             </button>
@@ -508,60 +501,49 @@ export default function Progetti() {
       )}
 
       {progetti.length === 0 ? (
-        <p>Nessun progetto disponibile.</p>
+        <p className="crm-projects__empty">Nessun progetto disponibile.</p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              background: "#fff"
-            }}
-          >
+        <div className="crm-data-table-wrap">
+          <table className="crm-data-table crm-projects__table crm-projects__list-table">
             <thead>
               <tr>
-                <th style={stileCella}>Nome</th>
-                <th style={stileCella}>Descrizione</th>
-                <th style={stileCella}>Stato</th>
-                <th style={stileCella}>Monitora adesioni</th>
-                <th style={stileCella}>Data creazione</th>
-                <th style={stileCella}>Cantine assegnate</th>
+                <th scope="col">Nome</th>
+                <th scope="col">Descrizione</th>
+                <th scope="col">Stato</th>
+                <th scope="col">Monitora adesioni</th>
+                <th scope="col">Data creazione</th>
+                <th scope="col">Cantine assegnate</th>
               </tr>
             </thead>
             <tbody>
               {progetti.map((progetto) => (
                 <tr key={progetto.id}>
-                  <td style={stileCella}>
+                  <td className="crm-projects__name-cell">
                     <button
                       type="button"
+                      className="crm-projects__name-link"
                       onClick={() =>
                         setProgettoSelezionatoId(String(progetto.id))
                       }
-                      style={{
-                        border: 0,
-                        padding: 0,
-                        background: "transparent",
-                        color: "#1d4ed8",
-                        font: "inherit",
-                        fontWeight: 600,
-                        textAlign: "left",
-                        textDecoration: "underline"
-                      }}
                     >
                       {progetto.nome || "Progetto senza nome"}
                     </button>
                   </td>
-                  <td style={{ ...stileCella, minWidth: 220 }}>
+                  <td className="crm-projects__description-cell">
                     {progetto.descrizione || "—"}
                   </td>
-                  <td style={stileCella}>{statoProgetto(progetto)}</td>
-                  <td style={stileCella}>
+                  <td>
+                    <span className={`crm-status crm-status--${classeStatoProgetto(progetto)}`}>
+                      {statoProgetto(progetto)}
+                    </span>
+                  </td>
+                  <td>
                     {progetto.monitora_adesioni ? "Sì" : "No"}
                   </td>
-                  <td style={{ ...stileCella, whiteSpace: "nowrap" }}>
+                  <td className="crm-projects__date-cell">
                     {formattaDataCreazione(progetto)}
                   </td>
-                  <td style={{ ...stileCella, textAlign: "right" }}>
+                  <td className="crm-projects__count-cell">
                     {progetto.cantineAssegnate}
                   </td>
                 </tr>

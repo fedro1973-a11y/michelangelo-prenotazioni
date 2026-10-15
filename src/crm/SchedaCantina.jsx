@@ -15,6 +15,26 @@ function formattaData(valore) {
   }).format(new Date(valore));
 }
 
+function classeStatoCantina(stato) {
+  if (stato === "ATTIVO") return "active";
+  if (stato === "NUOVO") return "new";
+  if (stato === "IN TRATTATIVA") return "progress";
+  if (stato === "NON INTERESSATO") return "not-interested";
+  return "closed";
+}
+
+function classeStatoPresentazione(stato) {
+  if (stato === "PRESENTATO") return "active";
+  if (stato === "IN CORSO DI PRESENTAZIONE") return "progress";
+  return "new";
+}
+
+function classeStatoAdesione(stato) {
+  if (stato === "ADERITO") return "active";
+  if (stato === "NON ADERITO") return "not-interested";
+  return "closed";
+}
+
 export default function SchedaCantina({
   cantinaId,
   attivita = null,
@@ -168,53 +188,33 @@ async function salvaNuovaScadenza() {
   onChiudi();
 }
 
-  const stilePulsante = {
-    padding: "5px 10px",
-    fontSize: 12,
-    whiteSpace: "nowrap"
-  };
-
-  const stileCella = {
-    padding: "6px 8px",
-    fontSize: 12,
-    verticalAlign: "top"
-  };
-
   if (loading) {
-    return <p>Caricamento scheda...</p>;
+    return <p className="crm-scheda__feedback" role="status">Caricamento scheda...</p>;
   }
 
   if (errore) {
     return (
-      <div>
-        <p style={{ color: "red" }}>{errore}</p>
-        <button onClick={onChiudi}>INDIETRO</button>
+      <div className="crm-scheda__feedback-wrap">
+        <p className="crm-scheda__feedback crm-scheda__feedback--error" role="alert">{errore}</p>
+        <button type="button" className="crm-scheda__back" onClick={onChiudi}>← Indietro</button>
       </div>
     );
   }
 
   if (!cantina) {
-    return <p>Cantina non trovata.</p>;
+    return <p className="crm-scheda__feedback" role="status">Cantina non trovata.</p>;
   }
 
   return (
-  <section style={{ marginTop: 12 }}>
+  <section className="crm-scheda">
 
     {attivita && (
-      <div
-        style={{
-          marginBottom: 12,
-          padding: 10,
-          border: "1px solid #ddd",
-          borderRadius: 8,
-          background: "#f7f7f7"
-        }}
-      >
-        <strong>ATTIVITÀ DA GESTIRE</strong>
+      <div className="crm-scheda__activity">
+        <strong className="crm-scheda__activity-title">ATTIVITÀ DA GESTIRE</strong>
 
-        <div style={{ marginTop: 8 }}>
+        <div className="crm-scheda__activity-actions">
   {!riprogramma ? (
-    <div style={{ display: "flex", gap: 8 }}>
+    <div className="crm-scheda__action-buttons">
       <button
         type="button"
         onClick={completaAttivita}
@@ -230,14 +230,7 @@ async function salvaNuovaScadenza() {
       </button>
     </div>
   ) : (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        flexWrap: "wrap"
-      }}
-    >
+    <div className="crm-scheda__reschedule">
       <input
         type="date"
         value={nuovaScadenza}
@@ -267,79 +260,42 @@ async function salvaNuovaScadenza() {
       </div>
     )}
 
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: 8,
-        marginBottom: 10
-      }}
-    >
-
-    </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 8,
-          marginBottom: 10
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 10
-          }}
-        >
+      <div className="crm-scheda__header">
+        <div className="crm-scheda__identity">
           <button
             type="button"
             onClick={onChiudi}
-            style={stilePulsante}
+            className="crm-scheda__back"
           >
-            ← INDIETRO
+            ← Indietro
           </button>
 
-        <h2 style={{ margin: 0 }}>
-  {cantina.nome_portale || cantina.ragione_sociale}
-</h2>
-
-          <span
-            style={{
-              padding: "3px 8px",
-              borderRadius: 4,
-              background: "#e2e8f0",
-              fontSize: 11,
-              fontWeight: 600
-            }}
-          >
-            {cantina.stato}
-          </span>
+          <div className="crm-scheda__title">
+            <h2>{cantina.nome_portale || cantina.ragione_sociale}</h2>
+            <span className={`crm-status crm-status--${classeStatoCantina(cantina.stato)}`}>
+              {cantina.stato}
+            </span>
+          </div>
         </div>
 
         {vista !== "dettaglio" && (
-          <div style={{ display: "flex", gap: 6 }}>
+          <div className="crm-scheda__actions">
             <button
               type="button"
+              className="crm-scheda__secondary-action"
               onClick={() =>
                 setVista(vista === "modifica" ? "" : "modifica")
               }
-              style={stilePulsante}
             >
               MODIFICA
             </button>
 
             <button
               type="button"
+              className="crm-button--primary"
               onClick={() =>
                 setVista(vista === "contatto" ? "" : "contatto")
               }
-              style={stilePulsante}
             >
               + CONTATTO
             </button>
@@ -347,62 +303,60 @@ async function salvaNuovaScadenza() {
         )}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fit, minmax(190px, 1fr))",
-          gap: "6px 16px",
-          padding: 10,
-          border: "1px solid #ddd",
-          borderRadius: 6,
-          fontSize: 12,
-          marginBottom: 10
-        }}
-      >
-        <div>
-          <strong>ID Portale:</strong> {cantina.id_portale || "—"}
+      <div className="crm-scheda__info">
+        <div className="crm-scheda__info-item">
+          <span>ID Portale</span>
+          <strong>{cantina.id_portale || "—"}</strong>
         </div>
 
-        <div>
-          <strong>P. IVA:</strong> {cantina.partita_iva || "—"}
+        <div className="crm-scheda__info-item">
+          <span>P. IVA</span>
+          <strong>{cantina.partita_iva || "—"}</strong>
         </div>
 
-        <div>
-  <strong>Ragione sociale:</strong>{" "}
-  {cantina.ragione_sociale || "—"}
-</div>
-
-<div>
-  <strong>Città:</strong> {cantina.citta || "—"}
-</div>
-
-<div>
-  <strong>Provincia:</strong> {cantina.provincia || "—"}
-</div>
-
-<div>
-  <strong>Regione:</strong> {cantina.regione || "—"}
-</div>
-
-        <div>
-          <strong>Referente:</strong> {cantina.referente || "—"}
+        <div className="crm-scheda__info-item">
+          <span>Ragione sociale</span>
+          <strong>{cantina.ragione_sociale || "—"}</strong>
         </div>
 
-        <div>
-          <strong>Cellulare:</strong> {cantina.cellulare || "—"}
+        <div className="crm-scheda__info-item">
+          <span>Città</span>
+          <strong>{cantina.citta || "—"}</strong>
         </div>
 
-        <div>
-          <strong>Telefono:</strong> {cantina.telefono || "—"}
+        <div className="crm-scheda__info-item">
+          <span>Provincia</span>
+          <strong>{cantina.provincia || "—"}</strong>
         </div>
 
-        <div>
-          <strong>Email:</strong> {cantina.email || "—"}
+        <div className="crm-scheda__info-item">
+          <span>Regione</span>
+          <strong>{cantina.regione || "—"}</strong>
         </div>
 
-        <div style={{ gridColumn: "1 / -1" }}>
-          <strong>Indirizzo:</strong> {cantina.indirizzo || "—"}
+        <div className="crm-scheda__info-item">
+          <span>Referente</span>
+          <strong>{cantina.referente || "—"}</strong>
+        </div>
+
+        <div className="crm-scheda__info-item">
+          <span>Cellulare</span>
+          <strong>{cantina.cellulare || "—"}</strong>
+        </div>
+
+        <div className="crm-scheda__info-item">
+          <span>Telefono</span>
+          <strong>{cantina.telefono || "—"}</strong>
+        </div>
+
+        <div className="crm-scheda__info-item">
+          <span>Email</span>
+          <strong>{cantina.email || "—"}</strong>
+        </div>
+
+        <div className="crm-scheda__info-item crm-scheda__info-item--address">
+          <span>Indirizzo</span>
+          <strong>{cantina.indirizzo || "—"}</strong>
         </div>
       </div>
 
@@ -429,7 +383,7 @@ async function salvaNuovaScadenza() {
               onAnnulla={() => setVista("")}
             />
           ) : (
-            <section aria-label="Dettaglio storico contatto">
+            <section className="crm-scheda__history-detail" aria-label="Dettaglio storico contatto">
               <div
                 style={{
                   display: "flex",
@@ -439,8 +393,8 @@ async function salvaNuovaScadenza() {
                   marginBottom: 12
                 }}
               >
-                <h3 style={{ margin: 0 }}>Dettaglio storico contatto</h3>
-                <button type="button" onClick={chiudiDettaglioContatto}>
+                <h3>Dettaglio storico contatto</h3>
+                <button type="button" className="crm-scheda__detail-close" onClick={chiudiDettaglioContatto}>
                   CHIUDI
                 </button>
               </div>
@@ -488,11 +442,23 @@ async function salvaNuovaScadenza() {
                   </div>
                   <div>
                     <strong>Stato presentazione registrato</strong>
-                    <div>{dettaglioStorico?.presentazione || "Non registrato"}</div>
+                    <div>
+                      {dettaglioStorico?.presentazione ? (
+                        <span className={`crm-status crm-status--${classeStatoPresentazione(dettaglioStorico.presentazione)}`}>
+                          {dettaglioStorico.presentazione}
+                        </span>
+                      ) : "Non registrato"}
+                    </div>
                   </div>
                   <div>
                     <strong>Stato adesione registrato</strong>
-                    <div>{dettaglioStorico?.adesione || "Non registrato"}</div>
+                    <div>
+                      {dettaglioStorico?.adesione ? (
+                        <span className={`crm-status crm-status--${classeStatoAdesione(dettaglioStorico.adesione)}`}>
+                          {dettaglioStorico.adesione}
+                        </span>
+                      ) : "Non registrato"}
+                    </div>
                   </div>
                   <div>
                     <strong>Richiamo collegato</strong>
@@ -518,76 +484,61 @@ async function salvaNuovaScadenza() {
       )}
 
       <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 6
-        }}
+        className="crm-scheda__history-heading"
       >
-        <h3 style={{ margin: 0, fontSize: 16 }}>
-          Storico contatti
-        </h3>
+        <h3>Storico contatti</h3>
 
-        <span style={{ fontSize: 12, color: "#64748b" }}>
+        <span className="crm-scheda__history-count">
           {contatti.length} registrazioni
         </span>
       </div>
 
       {contatti.length === 0 ? (
-        <p style={{ fontSize: 12 }}>
+        <p className="crm-scheda__empty" role="status">
           Nessun contatto registrato.
         </p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse"
-            }}
-          >
+        <div className="crm-data-table-wrap">
+          <table className="crm-data-table crm-scheda__history-table">
             <thead>
               <tr>
-                <th style={stileCella}>Data</th>
-                <th style={stileCella}>Tipo</th>
-                <th style={stileCella}>Canale</th>
-                <th style={stileCella}>Interlocutore</th>
-                <th style={stileCella}>Note</th>
-                <th style={stileCella}>Dettaglio</th>
+                <th scope="col">Data</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Canale</th>
+                <th scope="col">Interlocutore</th>
+                <th scope="col">Note</th>
+                <th scope="col">Dettaglio</th>
               </tr>
             </thead>
 
             <tbody>
               {contatti.map((contatto) => (
                 <tr key={contatto.id}>
-                  <td
-                    style={{
-                      ...stileCella,
-                      whiteSpace: "nowrap"
-                    }}
-                  >
+                  <td className="crm-scheda__history-date">
                     {formattaData(contatto.data_contatto)}
                   </td>
 
-                  <td style={stileCella}>
-                    {contatto.aggiornamento_prodotti
-                      ? "PRODOTTI AGGIORNATI"
-                      : "CONTATTO"}
+                  <td>
+                    <span className={`crm-status crm-status--${contatto.aggiornamento_prodotti ? "active" : "new"}`}>
+                      {contatto.aggiornamento_prodotti
+                        ? "PRODOTTI AGGIORNATI"
+                        : "CONTATTO"}
+                    </span>
                   </td>
 
-                  <td style={stileCella}>
+                  <td>
                     {contatto.canale || "—"}
                   </td>
 
-                  <td style={stileCella}>
+                  <td>
                     {contatto.interlocutore || "—"}
                   </td>
 
-                  <td style={stileCella}>
+                  <td className="crm-scheda__history-notes">
                     {contatto.sintesi || "—"}
                   </td>
 
-                  <td style={stileCella}>
+                  <td className="crm-scheda__history-action">
                     <button
                       type="button"
                       onClick={() => apriDettaglioContatto(contatto)}

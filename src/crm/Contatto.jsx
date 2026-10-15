@@ -161,215 +161,185 @@ export default function Contatto({
 
 
   return (
-    <form onSubmit={salva} style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-      gap: 12
-    }}>
-      <h3 style={{ gridColumn: "1 / -1", margin: 0 }}>
-        Nuovo contatto: {cantina.ragione_sociale}
-      </h3>
+    <form className="crm-contatto" onSubmit={salva}>
+      <header className="crm-contatto__header">
+        <h3>Nuovo contatto: {cantina.ragione_sociale}</h3>
+        <div className="crm-contatto__legend" aria-label="Legenda campi">
+          <span><span className="crm-contatto__required-mark">*</span> Obbligatorio</span>
+          <span>Facoltativo</span>
+        </div>
+      </header>
 
-      
-      <label style={{ gridColumn: "1 / -1" }}>
-        Data del contatto
-        <input
-          type="date"
-          value={dataContatto}
-          onChange={(e) => setDataContatto(e.target.value)}
-          required
-          style={{
-            display: "block",
-            width: "100%",
-            padding: 8,
-            boxSizing: "border-box",
-            marginTop: 5
-          }}
-        />
-      </label>
-
-      <label style={{ gridColumn: "1 / -1" }}>
-        <input
-          type="checkbox"
-          checked={prodotti}
-          onChange={(e) => setProdotti(e.target.checked)}
-        />
-        {" "}Prodotti aggiornati
-      </label>
-{!prodotti && (
-        <>
-          <label>
-            Canale
-            <select
-              value={canale}
-              onChange={(e) => setCanale(e.target.value)}
-              style={{ display: "block", width: "100%", padding: 8 }}
-            >
-              <option value="TELEFONO">Telefono</option>
-              <option value="EMAIL">Email</option>
-              <option value="DI PERSONA">Di persona</option>
-              <option value="WEB">Web</option>
-              <option value="ALTRO">Altro</option>
-            </select>
-          </label>
-
-          <label>
-            Interlocutore
+      <section className="crm-contatto__section" aria-labelledby="crm-contatto-info-title">
+        <h4 id="crm-contatto-info-title">Informazioni del contatto</h4>
+        <div className="crm-contatto__grid">
+          <label className="crm-contatto__field">
+            <span>Data del contatto <span className="crm-contatto__required">Obbligatoria</span></span>
             <input
-              value={interlocutore}
-              onChange={(e) => setInterlocutore(e.target.value)}
-              style={{ display: "block", width: "100%", padding: 8 }}
+              type="date"
+              value={dataContatto}
+              onChange={(e) => setDataContatto(e.target.value)}
+              required
             />
           </label>
 
-        </>
-      )}
+          <label className="crm-contatto__check">
+            <input
+              type="checkbox"
+              checked={prodotti}
+              onChange={(e) => setProdotti(e.target.checked)}
+            />
+            <span>Prodotti aggiornati</span>
+          </label>
 
-      <label style={{ gridColumn: "1 / -1" }}>
-        Progetto associato
-        <select
-          value={progettoId}
-          onChange={(e) => selezionaProgetto(e.target.value)}
-          style={{ display: "block", width: "100%", padding: 8 }}
-        >
-          <option value="">Nessun progetto</option>
-          {progetti.map((progetto) => (
-            <option key={progetto.id} value={progetto.id}>
-              {progetto.nome}
-            </option>
-          ))}
-        </select>
-      </label>
+          {!prodotti && (
+            <>
+              <label className="crm-contatto__field">
+                <span>Canale <span className="crm-contatto__optional">Facoltativo</span></span>
+                <select
+                  value={canale}
+                  onChange={(e) => setCanale(e.target.value)}
+                >
+                  <option value="TELEFONO">Telefono</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="DI PERSONA">Di persona</option>
+                  <option value="WEB">Web</option>
+                  <option value="ALTRO">Altro</option>
+                </select>
+              </label>
 
-      {progettoSelezionato?.assegnazione && (
-        <fieldset
-          style={{
-            gridColumn: "1 / -1",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 12,
-            border: "1px solid #cbd5e1",
-            padding: 12
-          }}
-        >
-          <legend>Aggiornamento progetto in questo contatto</legend>
-          <label>
-            Stato presentazione
+              <label className="crm-contatto__field">
+                <span>Interlocutore <span className="crm-contatto__optional">Facoltativo</span></span>
+                <input
+                  value={interlocutore}
+                  onChange={(e) => setInterlocutore(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+
+          <label className="crm-contatto__field crm-contatto__field--full">
+            <span>
+              {prodotti ? "Note (facoltative)" : "Sintesi della conversazione"}
+              {!prodotti && <span className="crm-contatto__required">Obbligatoria</span>}
+            </span>
+            <textarea
+              value={sintesi}
+              onChange={(e) => setSintesi(e.target.value)}
+              rows={3}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="crm-contatto__section" aria-labelledby="crm-contatto-project-title">
+        <h4 id="crm-contatto-project-title">Progetto collegato e aggiornamento</h4>
+        <div className="crm-contatto__grid">
+          <label className="crm-contatto__field crm-contatto__field--full">
+            <span>Progetto associato <span className="crm-contatto__optional">Facoltativo</span></span>
             <select
-              value={statoPresentazione}
-              onChange={(e) => setStatoPresentazione(e.target.value)}
-              style={{ display: "block", width: "100%", padding: 8 }}
+              value={progettoId}
+              onChange={(e) => selezionaProgetto(e.target.value)}
             >
-              {STATI_PRESENTAZIONE
-                .filter(
-                  (stato) =>
-                    progettoSelezionato.assegnazione.stato_presentazione !==
-                      "PRESENTATO" || stato === "PRESENTATO"
-                )
-                .map((stato) => (
-                  <option key={stato} value={stato}>
-                    {stato}
-                  </option>
-                ))}
+              <option value="">Nessun progetto</option>
+              {progetti.map((progetto) => (
+                <option key={progetto.id} value={progetto.id}>
+                  {progetto.nome}
+                </option>
+              ))}
             </select>
           </label>
-          {progettoSelezionato.monitora_adesioni && (
-            <label>
-              Stato adesione
-              <select
-                value={statoAdesione}
-                onChange={(e) => setStatoAdesione(e.target.value)}
-                disabled={statoPresentazione !== "PRESENTATO"}
-                style={{ display: "block", width: "100%", padding: 8 }}
-              >
-                {STATI_ADESIONE.map((stato) => (
-                  <option key={stato} value={stato}>
-                    {stato}
-                  </option>
-                ))}
-              </select>
-            </label>
+
+          {progettoSelezionato?.assegnazione && (
+            <fieldset className="crm-contatto__states">
+              <legend>Aggiornamento progetto in questo contatto</legend>
+              <label className="crm-contatto__field">
+                <span>Stato presentazione</span>
+                <select
+                  value={statoPresentazione}
+                  onChange={(e) => setStatoPresentazione(e.target.value)}
+                >
+                  {STATI_PRESENTAZIONE
+                    .filter(
+                      (stato) =>
+                        progettoSelezionato.assegnazione.stato_presentazione !==
+                          "PRESENTATO" || stato === "PRESENTATO"
+                    )
+                    .map((stato) => (
+                      <option key={stato} value={stato}>
+                        {stato}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {progettoSelezionato.monitora_adesioni && (
+                <label className="crm-contatto__field">
+                  <span>Stato adesione</span>
+                  <select
+                    value={statoAdesione}
+                    onChange={(e) => setStatoAdesione(e.target.value)}
+                    disabled={statoPresentazione !== "PRESENTATO"}
+                  >
+                    {STATI_ADESIONE.map((stato) => (
+                      <option key={stato} value={stato}>
+                        {stato}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </fieldset>
           )}
-        </fieldset>
-      )}
+        </div>
+      </section>
 
-      <label style={{ gridColumn: "1 / -1" }}>
-        {prodotti ? "Note (facoltative)" : "Sintesi della conversazione"}
-        <textarea
-          value={sintesi}
-          onChange={(e) => setSintesi(e.target.value)}
-          rows={3}
-          style={{
-            display: "block",
-            width: "100%",
-            boxSizing: "border-box"
-          }}
-        />
-      </label>
+      <section className="crm-contatto__section crm-contatto__section--reminder" aria-labelledby="crm-contatto-reminder-title">
+        <h4 id="crm-contatto-reminder-title">Attività successiva</h4>
+        <label className="crm-contatto__check">
+          <input
+            type="checkbox"
+            checked={programmaRichiamo}
+            onChange={(e) => setProgrammaRichiamo(e.target.checked)}
+          />
+          <span>PROGRAMMA PROSSIMO RICHIAMO</span>
+        </label>
 
-<div style={{ gridColumn: "1 / -1" }}>
-  <label>
-    <input
-      type="checkbox"
-      checked={programmaRichiamo}
-      onChange={(e) => setProgrammaRichiamo(e.target.checked)}
-    />
-    {" "}PROGRAMMA PROSSIMO RICHIAMO
-  </label>
-</div>
+        {programmaRichiamo && (
+          <div className="crm-contatto__grid">
+            <label className="crm-contatto__field">
+              <span>Data prossimo richiamo <span className="crm-contatto__required">Obbligatoria</span></span>
+              <input
+                type="date"
+                value={dataRichiamo}
+                onChange={(e) => setDataRichiamo(e.target.value)}
+                required
+              />
+            </label>
+            <label className="crm-contatto__field crm-contatto__field--full">
+              <span>Attività da svolgere <span className="crm-contatto__required">Obbligatoria</span></span>
+              <textarea
+                value={descrizioneRichiamo}
+                onChange={(e) => setDescrizioneRichiamo(e.target.value)}
+                required
+                rows={2}
+                placeholder="Es. Richiamare per verificare interesse"
+              />
+            </label>
+          </div>
+        )}
+      </section>
 
-{programmaRichiamo && (
-  <>
-    <label style={{ gridColumn: "1 / -1" }}>
-      Data prossimo richiamo
-      <input
-        type="date"
-        value={dataRichiamo}
-        onChange={(e) => setDataRichiamo(e.target.value)}
-        required
-        style={{
-          display: "block",
-          width: "100%",
-          padding: 8,
-          boxSizing: "border-box",
-          marginTop: 5
-        }}
-      />
-    </label>
-    <label style={{ gridColumn: "1 / -1" }}>
-      Attività da svolgere
-      <textarea
-        value={descrizioneRichiamo}
-        onChange={(e) => setDescrizioneRichiamo(e.target.value)}
-        required
-        rows={2}
-        placeholder="Es. Richiamare per verificare interesse"
-        style={{
-          display: "block",
-          width: "100%",
-          boxSizing: "border-box",
-          marginTop: 5
-        }}
-      />
-    </label>
-  </>
-)}
       {errore && (
-        <p style={{ gridColumn: "1 / -1", color: "red" }}>
+        <p className="crm-contatto__error" role="alert">
           {errore}
         </p>
       )}
 
-      <div style={{
-        gridColumn: "1 / -1",
-        display: "flex",
-        justifyContent: "flex-end",
-        gap: 10
-      }}>
+      <div className="crm-contatto__actions">
         <button type="button" onClick={onAnnulla} disabled={saving}>
           ANNULLA
         </button>
-        <button type="submit" disabled={saving} style={{ minWidth: 155 }}>
+        <button type="submit" className="crm-button--primary" disabled={saving}>
           {saving ? "Salvataggio..." : "SALVA CONTATTO"}
         </button>
       </div>

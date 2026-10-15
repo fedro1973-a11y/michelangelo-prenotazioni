@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { crmSupabase } from "./supabase";
 import Cantine from "./Cantine";
 import Segnalatori from "./Segnalatori";
@@ -15,6 +15,10 @@ export default function CRM() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const accessRequestId = useRef(0);
+  const authEventRevision = useRef(0);
+  const verifiedAccess = useRef({ userId: null, authorized: false });
+  const pendingAccessCheck = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -22,49 +26,94 @@ export default function CRM() {
     async function checkAccess(currentSession) {
       if (!active) return;
 
+      const userId = currentSession?.user?.id ?? null;
+
+      if (!userId) {
+        accessRequestId.current += 1;
+        pendingAccessCheck.current = null;
+        verifiedAccess.current = { userId: null, authorized: false };
+        setSession(null);
+        setAuthorized(false);
+        setLoading(false);
+        setError("");
+        return;
+      }
+
+      if (
+        verifiedAccess.current.userId === userId &&
+        verifiedAccess.current.authorized
+      ) {
+        return;
+      }
+
+      if (pendingAccessCheck.current?.userId === userId) return;
+
+      const requestId = ++accessRequestId.current;
+      pendingAccessCheck.current = { userId, requestId };
       setLoading(true);
       setAuthorized(false);
       setSession(currentSession);
 
-      if (!currentSession) {
-        setLoading(false);
-        return;
-      }
+      try {
+        const { data, error: accessError } = await crmSupabase
+          .from("crm_admins")
+          .select("user_id")
+          .eq("user_id", userId)
+          .maybeSingle();
 
-      const { data, error } = await crmSupabase
-        .from("crm_admins")
-        .select("user_id")
-        .eq("user_id", currentSession.user.id)
-        .maybeSingle();
+        if (!active || requestId !== accessRequestId.current) return;
 
-      if (!active) return;
+        if (accessError) {
+          console.error(accessError);
+          setError("Impossibile verificare le autorizzazioni.");
+          verifiedAccess.current = { userId, authorized: false };
+        } else {
+          setError("");
+          const isAuthorized = !!data;
+          setAuthorized(isAuthorized);
+          verifiedAccess.current = { userId, authorized: isAuthorized };
+        }
+      } catch (accessError) {
+        if (!active || requestId !== accessRequestId.current) return;
 
-      if (error) {
+        console.error(accessError);
         setError("Impossibile verificare le autorizzazioni.");
-      } else {
-        setError("");
-        setAuthorized(!!data);
+        verifiedAccess.current = { userId, authorized: false };
+      } finally {
+        if (active && requestId === accessRequestId.current) {
+          pendingAccessCheck.current = null;
+          setLoading(false);
+        }
       }
-
-      setLoading(false);
     }
 
+    const initialAuthEventRevision = authEventRevision.current;
     crmSupabase.auth.getSession().then(({ data }) => {
-      checkAccess(data.session);
+      if (
+        active &&
+        authEventRevision.current === initialAuthEventRevision
+      ) {
+        checkAccess(data.session);
+      }
     });
 
     const { data: listener } =
       crmSupabase.auth.onAuthStateChange(
         (event, newSession) => {
-          if (event === "SIGNED_IN" ||
-              event === "SIGNED_OUT") {
+          if (event === "SIGNED_IN") {
+            authEventRevision.current += 1;
             checkAccess(newSession);
+          } else if (event === "SIGNED_OUT") {
+            authEventRevision.current += 1;
+            checkAccess(null);
           }
         }
       );
 
     return () => {
       active = false;
+      accessRequestId.current += 1;
+      pendingAccessCheck.current = null;
       listener.subscription.unsubscribe();
     };
   }, []);
@@ -164,12 +213,7 @@ export default function CRM() {
   }
 
   return (
-  <div style={{
-    maxWidth: 1200,
-    margin: "20px auto",
-    padding: 20,
-    fontFamily: "Arial"
-  }}>
+  <div className={`crm-shell${pagina === "cantine" || pagina === "dashboard" || pagina === "progetti" ? " crm-shell--wide" : ""}`}>
     <header style={{
       display: "flex",
       justifyContent: "space-between",

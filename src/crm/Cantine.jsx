@@ -14,6 +14,14 @@ const STATI = [
   "CESSATO"
 ];
 
+const CLASSI_STATO = {
+  ATTIVO: "active",
+  NUOVO: "new",
+  "IN TRATTATIVA": "progress",
+  "NON INTERESSATO": "not-interested",
+  CESSATO: "closed"
+};
+
 export default function Cantine() {
   const [cantine, setCantine] = useState([]);
   const [totale, setTotale] = useState(0);
@@ -152,21 +160,6 @@ export default function Cantine() {
     setAggiornamento((n) => n + 1);
   }
 
-  const stileCella = {
-    padding: "7px 9px",
-    fontSize: 12,
-    textAlign: "left",
-    borderBottom: "1px solid #e2e8f0",
-    whiteSpace: "nowrap"
-  };
-
-  const stilePulsante = {
-    padding: "5px 10px",
-    fontSize: 12,
-    whiteSpace: "nowrap",
-    cursor: "pointer"
-  };
-
   if (cantinaSchedaId !== null) {
     return (
       <SchedaCantina
@@ -180,33 +173,13 @@ export default function Cantine() {
   }
 
   return (
-    <section style={{ marginTop: 12 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 10,
-          marginBottom: 12
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 12
-          }}
-        >
-          <h2 style={{ margin: 0 }}>Cantine</h2>
+    <section className="crm-cantine">
+      <div className="crm-cantine__header">
+        <div className="crm-cantine__heading">
+          <h2>Cantine</h2>
 
           {!loading && !errore && (
-            <span
-              style={{
-                fontSize: 12,
-                color: "#64748b"
-              }}
-            >
+            <span className="crm-cantine__count">
               {totale} risultati
             </span>
           )}
@@ -217,38 +190,20 @@ export default function Cantine() {
           onClick={() =>
             setMostraModulo((precedente) => !precedente)
           }
-          style={stilePulsante}
+          className="crm-button--primary"
         >
           + NUOVA CANTINA
         </button>
       </div>
 
       {mostraModulo && (
-        <div
-          style={{
-            padding: 12,
-            marginBottom: 14,
-            border: "1px solid #ddd",
-            borderRadius: 6,
-            background: "#f8fafc"
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12
-            }}
-          >
-            <h3 style={{ margin: 0 }}>
-              Nuova cantina
-            </h3>
+        <div className="crm-cantine__new-form">
+          <div className="crm-cantine__new-form-header">
+            <h3>Nuova cantina</h3>
 
             <button
               type="button"
               onClick={() => setMostraModulo(false)}
-              style={stilePulsante}
             >
               ANNULLA
             </button>
@@ -262,29 +217,15 @@ export default function Cantine() {
 
       <form
         onSubmit={cerca}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "end",
-          gap: 10,
-          marginBottom: 12
-        }}
+        className="crm-cantine__filters"
       >
-        <label style={{ fontSize: 12 }}>
-          <div style={{ marginBottom: 4 }}>
-            Stato
-          </div>
-
+        <label className="crm-cantine__field crm-cantine__field--status">
+          Stato
           <select
             value={stato}
             onChange={(e) =>
               cambiaStato(e.target.value)
             }
-            style={{
-              minWidth: 170,
-              height: 34,
-              padding: "4px 8px"
-            }}
           >
             <option value="TUTTI">
               TUTTI
@@ -301,16 +242,8 @@ export default function Cantine() {
           </select>
         </label>
 
-        <label
-          style={{
-            fontSize: 12,
-            flex: "1 1 250px"
-          }}
-        >
-          <div style={{ marginBottom: 4 }}>
-            Cerca nome cantina
-          </div>
-
+        <label className="crm-cantine__field crm-cantine__field--search">
+          Cerca nome cantina
           <input
             type="search"
             value={ricerca}
@@ -318,71 +251,39 @@ export default function Cantine() {
               setRicerca(e.target.value)
             }
             placeholder="Nome sul portale..."
-            style={{
-              width: "100%",
-              height: 34,
-              padding: "4px 9px",
-              boxSizing: "border-box"
-            }}
           />
         </label>
 
-        <button
-          type="submit"
-          style={{
-            ...stilePulsante,
-            height: 34
-          }}
-        >
+        <button type="submit">
           CERCA
         </button>
 
         <button
           type="button"
           onClick={pulisciRicerca}
-          style={{
-            ...stilePulsante,
-            height: 34
-          }}
         >
           AZZERA
         </button>
       </form>
 
       {errore && (
-        <p style={{ color: "red" }}>
+        <p className="crm-cantine__error" role="alert">
           {errore}
         </p>
       )}
 
       {loading && (
-        <p style={{ fontSize: 12 }}>
+        <p className="crm-cantine__loading" role="status">
           Caricamento cantine...
         </p>
       )}
 
       {!loading && !errore && (
         <>
-          <div
-            style={{
-              overflowX: "auto",
-              border: "1px solid #e2e8f0",
-              borderRadius: 6
-            }}
-          >
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse"
-              }}
-            >
+          <div className="crm-cantine__table-wrap">
+            <table className="crm-cantine__table">
               <thead>
-                <tr
-                  style={{
-                    background: "#f1f5f9"
-                  }}
-                >
-                  <th style={stileCella}>Scheda</th>
+                <tr>
                   {[
                     "ID Portale",
                     "Nome cantina",
@@ -391,85 +292,51 @@ export default function Cantine() {
                     "Provincia",
                     "Regione"
                   ].map((titolo) => (
-                    <th
-                      key={titolo}
-                      style={stileCella}
-                    >
+                    <th key={titolo} scope="col">
                       {titolo}
                     </th>
                   ))}
 
-                  <th
-                    style={{
-                      ...stileCella,
-                      textAlign: "right"
-                    }}
-                  >
-                    Scheda
-                  </th>
+                  <th scope="col">Azioni</th>
                 </tr>
               </thead>
 
               <tbody>
                 {cantine.map((cantina) => (
                   <tr key={cantina.id}>
-                    <td style={stileCella}>
-  <button
-    type="button"
-    onClick={() => setCantinaSchedaId(cantina.id)}
-    style={stilePulsante}
-  >
-    SCHEDA →
-  </button>
-</td>
-                    <td style={stileCella}>
+                    <td>
                       {cantina.id_portale || "—"}
                     </td>
 
-                    <td
-                      style={{
-                        ...stileCella,
-                        whiteSpace: "normal",
-                        minWidth: 170,
-                        fontWeight: 600
-                      }}
-                    >
+                    <td className="crm-cantine__name">
                       {cantina.nome_portale ||
                         cantina.ragione_sociale}
                     </td>
 
-                    <td style={stileCella}>
-                      {cantina.stato}
+                    <td>
+                      <span className={`crm-status crm-status--${CLASSI_STATO[cantina.stato] || "closed"}`}>
+                        {cantina.stato}
+                      </span>
                     </td>
 
-                    <td style={stileCella}>
+                    <td>
                       {cantina.citta || "—"}
                     </td>
 
-                    <td style={stileCella}>
+                    <td>
                       {cantina.provincia || "—"}
                     </td>
 
-                    <td style={stileCella}>
+                    <td>
                       {cantina.regione || "—"}
                     </td>
 
-                    <td
-                      style={{
-                        ...stileCella,
-                        textAlign: "right"
-                      }}
-                    >
+                    <td className="crm-cantine__action">
                       <button
                         type="button"
-                        onClick={() =>
-                          setCantinaSchedaId(
-                            cantina.id
-                          )
-                        }
-                        style={stilePulsante}
+                        onClick={() => setCantinaSchedaId(cantina.id)}
                       >
-                        SCHEDA →
+                        Apri
                       </button>
                     </td>
                   </tr>
@@ -478,29 +345,13 @@ export default function Cantine() {
             </table>
 
             {cantine.length === 0 && (
-              <p
-                style={{
-                  padding: 15,
-                  textAlign: "center",
-                  fontSize: 12
-                }}
-              >
+              <p className="crm-cantine__empty">
                 Nessuna cantina trovata.
               </p>
             )}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 10,
-              marginTop: 12,
-              fontSize: 12
-            }}
-          >
+          <div className="crm-cantine__pagination">
             <span>
               {totale === 0
                 ? "0 risultati"
@@ -511,20 +362,13 @@ export default function Cantine() {
                   )} di ${totale}`}
             </span>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10
-              }}
-            >
+            <div className="crm-cantine__pagination-controls">
               <button
                 type="button"
                 disabled={pagina <= 1}
                 onClick={() =>
                   setPagina((p) => p - 1)
                 }
-                style={stilePulsante}
               >
                 ← PRECEDENTE
               </button>
@@ -539,7 +383,6 @@ export default function Cantine() {
                 onClick={() =>
                   setPagina((p) => p + 1)
                 }
-                style={stilePulsante}
               >
                 SUCCESSIVA →
               </button>
